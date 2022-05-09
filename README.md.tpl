@@ -1,9 +1,9 @@
-# a10vThunder
-## Windows-orchestrator
+# {{ name }}
+## {{ integration_type | capitalize }}
 
-A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
+{{ description }}
 
-## Production Ready
+## {{ status | capitalize }} Ready
 
 <!-- add integration specific information below -->
 *** 
