@@ -2,14 +2,17 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using CSS.Common.Logging;
+
 using Keyfactor.Extensions.Orchestrator.vThunder.api;
-using Keyfactor.Platform.Extensions.Agents;
-using Keyfactor.Platform.Extensions.Agents.Enums;
+using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Common.Enums;
+using Keyfactor.Logging;
+
+using Microsoft.Extensions.Logging;
 
 namespace Keyfactor.Extensions.Orchestrator.vThunder
 {
-    public class CertManager : LoggingClientBase
+    public class CertManager
     {
         public virtual InventoryResult GetCert(ApiClient apiClient, string certName)
         {
@@ -27,6 +30,8 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
 
         public virtual InventoryResult InventoryResult(ApiClient apiClient, string certName = "")
         {
+            ILogger logger = LogHandler.GetClassLogger<Management>();
+
             var result = new InventoryResult();
             var error = new AnyErrors {HasError = false};
 
@@ -36,7 +41,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
             CertificateCollection =
                 certName == "" ? apiClient.GetCertificates() : apiClient.GetCertificates(certName);
 
-            var inventoryItems = new List<AgentCertStoreInventoryItem>();
+            var inventoryItems = new List<CurrentInventoryItem>();
 
             logger.LogTrace("Start loop");
 
@@ -58,19 +63,19 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
                             logger.LogTrace($"Add to list: {cc.Name}");
                             if (cert.Thumbprint != null)
                                 inventoryItems.Add(
-                                    new AgentCertStoreInventoryItem
+                                    new CurrentInventoryItem
                                     {
                                         Certificates = new[]
                                             {CertificateDetails},
                                         Alias = cc.Name,
                                         PrivateKeyEntry = privateKeyEntry,
-                                        ItemStatus = AgentInventoryItemStatus.Unknown,
+                                        ItemStatus = OrchestratorInventoryItemStatus.Unknown,
                                         UseChainLevel = true
                                     });
                         }
                         catch (Exception ex)
                         {
-                            Logger.Error($"Certificate not retrievable: Error on {cc.Name}: {ex.Message}");
+                            logger.LogError($"Certificate not retrievable: Error on {cc.Name}: {ex.Message}");
                             error.ErrorMessage = ex.Message;
                             error.HasError = true;
                         }

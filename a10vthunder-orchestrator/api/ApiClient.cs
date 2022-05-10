@@ -1,26 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using CSS.Common.Logging;
+
+using Keyfactor.Logging;
+
+using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json;
 
 namespace Keyfactor.Extensions.Orchestrator.vThunder.api
 {
     [SuppressMessage("ReSharper", "ConstantConditionalAccessQualifier")]
-    public class ApiClient : LoggingClientBase, IDisposable
+    public class ApiClient : IDisposable
     {
         private static readonly Encoding Encoding = Encoding.UTF8;
         public virtual string AuthenticationSignature { get; set; }
         public string BaseUrl { get; set; }
-        public virtual string AllowInvalidCert { get; set; }
+        public virtual bool AllowInvalidCert { get; set; }
         public string UserId { get; set; }
         public string Password { get; set; }
-        public Configuration AppConfig { get; set; }
 
 
         #region Interface Implementation
@@ -34,11 +36,12 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
 
         #region Constructors
 
-        public ApiClient(string user, string pass, string baseUrl)
+        public ApiClient(string user, string pass, string baseUrl, bool allowInvalidCert)
         {
             BaseUrl = baseUrl;
             UserId = user;
             Password = pass;
+            AllowInvalidCert = allowInvalidCert;
         }
 
         public ApiClient()
@@ -51,6 +54,8 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
 
         public virtual void Logon()
         {
+            ILogger logger = LogHandler.GetClassLogger<Management>();
+
             var authRequest = new AuthRequest
                 {Credentials = new Credentials {Username = UserId, Password = Password}};
             var strRequest = JsonConvert.SerializeObject(authRequest);
@@ -62,7 +67,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error Authenticating: {ex.Message}");
+                logger.LogError($"Error Authenticating: {ex.Message}");
             }
         }
 
@@ -180,8 +185,6 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
             string strQueryString,
             bool bWrite, bool bUseToken)
         {
-            AppConfig = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
-            AllowInvalidCert = AppConfig.AppSettings.Settings["AllowInvalidCerts"].Value;
             var objRequest = CreateRequest(BaseUrl, strPostUrl);
             objRequest.Method = strMethod;
             objRequest.ContentType = "application/json";
@@ -193,7 +196,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
                 var postBytes = Encoding.UTF8.GetBytes(strQueryString);
                 objRequest.ContentLength = postBytes.Length;
                 //This is for testing on an Azure VM with an invalid certificate
-                if (AllowInvalidCert == "true")
+                if (AllowInvalidCert)
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                 using (var requestStream = objRequest.GetRequestStream())
                 {
@@ -203,7 +206,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
             }
 
             //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert == "true")
+            if (AllowInvalidCert)
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
             var objResponse = GetResponse(objRequest);
 
@@ -229,8 +232,6 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
         protected virtual HttpWebResponse PostForm(string postUrl, string userAgent, string contentType,
             byte[] formData)
         {
-            AppConfig = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
-            AllowInvalidCert = AppConfig.AppSettings.Settings["AllowInvalidCerts"].Value;
             var request = CreateRequest(BaseUrl, postUrl);
             if (request == null) throw new NullReferenceException("request is not a http request");
 
@@ -241,7 +242,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
             request.ContentLength = formData.Length;
             request.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
             //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert == "true")
+            if (AllowInvalidCert)
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
             // Send the form data to the request.
             using (var requestStream = request.GetRequestStream())
@@ -251,7 +252,7 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
             }
 
             //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert == "true")
+            if (AllowInvalidCert)
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
             return request?.GetResponse() as HttpWebResponse;
         }

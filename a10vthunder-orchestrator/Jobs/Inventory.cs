@@ -1,10 +1,15 @@
 ﻿using System;
-using System.Configuration;
 using System.Reflection;
+
 using Keyfactor.Extensions.Orchestrator.vThunder.api;
 using Keyfactor.Extensions.Orchestrator.vThunder.Exceptions;
+using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Common.Enums;
+
+using Microsoft.Extensions.Logging;
+
+using Newtonsoft.Json;
 
 namespace Keyfactor.Extensions.Orchestrator.vThunder
 {
@@ -16,42 +21,43 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
         protected internal virtual CertManager CertificateManager { get; set; }
         protected internal virtual ApiClient ApiClient { get; set; }
         protected internal virtual string Protocol { get; set; }
-        protected internal virtual Configuration AppConfig { get; set; }
+        protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
 
-        public override JobResult processJob(AnyJobConfigInfo config, SubmitInventoryUpdate submitInventory,
-            SubmitEnrollmentRequest submitEnrollmentRequest, SubmitDiscoveryResults sdr)
+        public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
-            AppConfig = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
-            Protocol = AppConfig.AppSettings.Settings["Protocol"].Value;
+            ILogger logger = LogHandler.GetClassLogger<Management>();
 
-            using (ApiClient = new ApiClient(config.Server.Username, config.Server.Password,
-                $"{Protocol}://{config.Store.ClientMachine.Trim()}"))
+            dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties.ToString());
+            Protocol = properties.protocol == null || string.IsNullOrEmpty(properties.protocol.Value) ? "https" : properties.protocol.Value;
+            AllowInvalidCert = properties.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value) ? "https" : bool.Parse(properties.protallowInvalidCertocol.Value);
+
+            using (ApiClient = new ApiClient(config.ServerUsername, config.CertificateStoreDetails.StorePassword,
+                $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 ApiClient.Logon();
                 try
                 {
-                    logger.LogTrace("Parse: Certificate Inventory: " + config.Store.StorePath);
-                    logger.LogTrace($"Certificate Store: {config.Store.StoretypeShortName}");
+                    logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);
+                    logger.LogTrace($"Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
 
                     logger.LogTrace("Entering A10 VThunder DataPower: Certificate Inventory");
-                    logger.LogTrace($"Entering processJob for Certificate Store: {config.Store.StoretypeShortName}");
+                    logger.LogTrace($"Entering processJob for Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
                     CertificateManager = new CertManager();
                     Result = CertificateManager.GetCerts(ApiClient);
                     ReturnValue = submitInventory.Invoke(Result.InventoryList);
 
                     if (ReturnValue == false)
-                        return ThrowError(new InvalidInventoryInvokeException(), "Inventory");
+                        return AnyErrors.ThrowError(logger, new InvalidInventoryInvokeException(), this.GetType().Name, "Inventory");
 
                     if (Result.Errors.HasError)
-                        return Warning(
-                            $"Inventory had issues retrieving some certificates: {Result.Errors.ErrorMessage}");
+                        return new JobResult() { JobHistoryId = config.JobHistoryId, FailureMessage = $"Inventory had issues retrieving some certificates: {Result.Errors.ErrorMessage}", Result = OrchestratorJobStatusJobResult.Warning };
 
-                    return Success();
+                    return new JobResult() { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
                 }
                 catch (Exception e)
                 {
-                    return ThrowError(e, "Inventory");
+                    return AnyErrors.ThrowError(logger, e, this.GetType().Name, "Inventory");
                 }
             }
         }

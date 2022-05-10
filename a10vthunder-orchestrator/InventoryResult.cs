@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Keyfactor.Platform.Extensions.Agents;
+using Keyfactor.Orchestrators.Extensions;
 
 namespace Keyfactor.Extensions.Orchestrator.vThunder
 {
@@ -7,6 +7,6 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
     {
         public virtual AnyErrors Errors { get; set; }
 
-        public virtual List<AgentCertStoreInventoryItem> InventoryList { get; set; }
+        public virtual List<CurrentInventoryItem> InventoryList { get; set; }
     }
 }
