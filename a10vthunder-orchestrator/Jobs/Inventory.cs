@@ -30,9 +30,9 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
 
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties.ToString());
             Protocol = properties.protocol == null || string.IsNullOrEmpty(properties.protocol.Value) ? "https" : properties.protocol.Value;
-            AllowInvalidCert = properties.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value) ? "https" : bool.Parse(properties.protallowInvalidCertocol.Value);
+            AllowInvalidCert = properties.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value) ? false : bool.Parse(properties.allowInvalidCert.Value);
 
-            using (ApiClient = new ApiClient(config.ServerUsername, config.CertificateStoreDetails.StorePassword,
+            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 ApiClient.Logon();
