@@ -1,4 +1,4 @@
-﻿namespace Keyfactor.Extensions.Orchestrator.vThunder
+﻿namespace a10vthunder_orchestrator
 {
     static class WindowsUserAnyAgentConstants
     {
@@ -11,6 +11,5 @@
         public const string Discovery = "Discovery";
         public const string Inventory = "Inventory";
         public const string Management = "Management";
-        public const string Reenrollment = "Enrollment";
     }
 }

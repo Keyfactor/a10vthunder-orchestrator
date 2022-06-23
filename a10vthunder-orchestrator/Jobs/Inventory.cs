@@ -1,21 +1,22 @@
 ﻿using System;
-using System.Reflection;
-
-using Keyfactor.Extensions.Orchestrator.vThunder.api;
-using Keyfactor.Extensions.Orchestrator.vThunder.Exceptions;
+using a10vthunder_orchestrator.Api;
+using a10vthunder_orchestrator.Exceptions;
 using Keyfactor.Logging;
-using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Common.Enums;
-
+using Keyfactor.Orchestrators.Extensions;
 using Microsoft.Extensions.Logging;
-
 using Newtonsoft.Json;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder
+namespace a10vthunder_orchestrator.Jobs
 {
     public class Inventory : IInventoryJobExtension
     {
-        public string ExtensionName => "";
+        private readonly ILogger<Inventory> _logger;
+
+        public Inventory(ILogger<Inventory> logger)
+        {
+            _logger = logger;
+        }
 
         protected internal virtual InventoryResult Result { get; set; }
         protected internal virtual CertManager CertificateManager { get; set; }
@@ -23,14 +24,21 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
         protected internal virtual string Protocol { get; set; }
         protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
+        public string ExtensionName => "A10VThunder";
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
-            ILogger logger = LogHandler.GetClassLogger<Management>();
+            _logger.MethodEntry();
 
-            dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties.ToString());
-            Protocol = properties.protocol == null || string.IsNullOrEmpty(properties.protocol.Value) ? "https" : properties.protocol.Value;
-            AllowInvalidCert = properties.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value) ? false : bool.Parse(properties.allowInvalidCert.Value);
+            dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+            Protocol = properties != null &&
+                       (properties.protocol == null || string.IsNullOrEmpty(properties.protocol.Value))
+                ? "https"
+                : properties?.protocol.Value;
+            AllowInvalidCert =
+                properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
+                    ? false
+                    : bool.Parse(properties.allowInvalidCert.Value);
 
             using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
@@ -38,26 +46,40 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder
                 ApiClient.Logon();
                 try
                 {
-                    logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);
-                    logger.LogTrace($"Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
+                    _logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);
+                    _logger.LogTrace(
+                        $"Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
 
-                    logger.LogTrace("Entering A10 VThunder DataPower: Certificate Inventory");
-                    logger.LogTrace($"Entering processJob for Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
+                    _logger.LogTrace("Entering A10 VThunder DataPower: Certificate Inventory");
+                    _logger.LogTrace(
+                        $"Entering processJob for Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
                     CertificateManager = new CertManager();
                     Result = CertificateManager.GetCerts(ApiClient);
+                    _logger.LogTrace($"Got {Result.InventoryList.Count} Certs from Inventory");
+
                     ReturnValue = submitInventory.Invoke(Result.InventoryList);
+                    _logger.LogTrace("Invoked Inventory");
+                    _logger.MethodExit();
 
                     if (ReturnValue == false)
-                        return AnyErrors.ThrowError(logger, new InvalidInventoryInvokeException(), this.GetType().Name, "Inventory");
+                        return AnyErrors.ThrowError(_logger, new InvalidInventoryInvokeException(), GetType().Name,
+                            "Inventory");
 
                     if (Result.Errors.HasError)
-                        return new JobResult() { JobHistoryId = config.JobHistoryId, FailureMessage = $"Inventory had issues retrieving some certificates: {Result.Errors.ErrorMessage}", Result = OrchestratorJobStatusJobResult.Warning };
+                        return new JobResult
+                        {
+                            JobHistoryId = config.JobHistoryId,
+                            FailureMessage =
+                                $"Inventory had issues retrieving some certificates: {Result.Errors.ErrorMessage}",
+                            Result = OrchestratorJobStatusJobResult.Warning
+                        };
 
-                    return new JobResult() { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
+                    return new JobResult
+                        {JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success};
                 }
                 catch (Exception e)
                 {
-                    return AnyErrors.ThrowError(logger, e, this.GetType().Name, "Inventory");
+                    return AnyErrors.ThrowError(_logger, e, GetType().Name, "Inventory");
                 }
             }
         }

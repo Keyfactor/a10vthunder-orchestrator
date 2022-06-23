@@ -1,4 +1,4 @@
-﻿namespace Keyfactor.Extensions.Orchestrator.vThunder.api
+﻿namespace a10vthunder_orchestrator.Api.Models
 {
     #region JSON Request and Response Classes
 

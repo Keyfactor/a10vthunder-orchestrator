@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder.Exceptions
+namespace a10vthunder_orchestrator.Exceptions
 {
-    class UnSupportedOperationException : Exception
+    internal class UnSupportedOperationException : Exception
     {
         public UnSupportedOperationException() : base("Unsupported Operation, only Add, Remove are supported")
         {
-
         }
     }
 }

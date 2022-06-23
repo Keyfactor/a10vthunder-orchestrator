@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Keyfactor.Orchestrators.Extensions;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder
+namespace a10vthunder_orchestrator
 {
     public class InventoryResult
     {

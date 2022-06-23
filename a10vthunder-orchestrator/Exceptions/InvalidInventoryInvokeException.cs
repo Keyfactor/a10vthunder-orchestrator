@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder.Exceptions
+namespace a10vthunder_orchestrator.Exceptions
 {
-    class InvalidInventoryInvokeException:Exception
+    internal class InvalidInventoryInvokeException : Exception
     {
-        public InvalidInventoryInvokeException():base("SubmitInventory.Invoke returned false")
+        public InvalidInventoryInvokeException() : base("SubmitInventory.Invoke returned false")
         {
-
         }
     }
 }

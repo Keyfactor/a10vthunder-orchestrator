@@ -1,10 +1,9 @@
 ﻿using System;
-using Keyfactor.Logging;
-using Microsoft.Extensions.Logging;
-using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Common.Enums;
+using Keyfactor.Orchestrators.Extensions;
+using Microsoft.Extensions.Logging;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder
+namespace a10vthunder_orchestrator
 {
     public class AnyErrors
     {

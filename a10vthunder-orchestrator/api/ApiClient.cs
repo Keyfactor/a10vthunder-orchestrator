@@ -1,29 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
-using System.Reflection;
 using System.Text;
-
+using a10vthunder_orchestrator.Api.Models;
 using Keyfactor.Logging;
-
 using Microsoft.Extensions.Logging;
-
 using Newtonsoft.Json;
 
-namespace Keyfactor.Extensions.Orchestrator.vThunder.api
+namespace a10vthunder_orchestrator.Api
 {
-    [SuppressMessage("ReSharper", "ConstantConditionalAccessQualifier")]
-    public class ApiClient : IDisposable
+    public sealed class ApiClient : IDisposable
     {
         private static readonly Encoding Encoding = Encoding.UTF8;
-        public virtual string AuthenticationSignature { get; set; }
+
+        #region Constructors
+
+        public ApiClient(string user, string pass, string baseUrl, bool allowInvalidCert)
+        {
+            Logger = LogHandler.GetClassLogger<ApiClient>();
+            BaseUrl = baseUrl;
+            UserId = user;
+            Password = pass;
+            AllowInvalidCert = allowInvalidCert;
+        }
+
+        #endregion
+
+        public string AuthenticationSignature { get; set; }
         public string BaseUrl { get; set; }
-        public virtual bool AllowInvalidCert { get; set; }
+        public bool AllowInvalidCert { get; set; }
         public string UserId { get; set; }
         public string Password { get; set; }
-
+        private ILogger Logger { get; }
 
         #region Interface Implementation
 
@@ -34,234 +43,376 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
 
         #endregion
 
-        #region Constructors
-
-        public ApiClient(string user, string pass, string baseUrl, bool allowInvalidCert)
-        {
-            BaseUrl = baseUrl;
-            UserId = user;
-            Password = pass;
-            AllowInvalidCert = allowInvalidCert;
-        }
-
-        public ApiClient()
-        {
-        }
-
-        #endregion
-
         #region Class Methods
 
-        public virtual void Logon()
+        public void Logon()
         {
-            ILogger logger = LogHandler.GetClassLogger<Management>();
-
+            Logger.MethodEntry();
             var authRequest = new AuthRequest
                 {Credentials = new Credentials {Username = UserId, Password = Password}};
             var strRequest = JsonConvert.SerializeObject(authRequest);
             try
             {
+                Logger.LogTrace($"Logging Login Request JSON: {strRequest}");
                 var strResponse = ApiRequestString("POST", "/axapi/v3/auth", "POST", strRequest, false, false);
+                Logger.LogTrace($"Logging Login Response JSON: {strResponse}");
                 var authSignatureResponse = JsonConvert.DeserializeObject<AuthSignatureResponse>(strResponse);
-                AuthenticationSignature = authSignatureResponse.Response.Signature;
+                Logger.LogTrace($"Auth Signature Response: {JsonConvert.SerializeObject(authSignatureResponse)}");
+                AuthenticationSignature = authSignatureResponse?.Response.Signature;
+                Logger.LogTrace($"Auth Signature: {AuthenticationSignature}");
+                Logger.MethodExit();
             }
             catch (Exception ex)
             {
-                logger.LogError($"Error Authenticating: {ex.Message}");
+                Logger.LogError($"Error Authenticating: {LogHandler.FlattenException(ex)}");
+                throw;
             }
         }
 
-        public virtual bool LogOff()
+        public bool LogOff()
         {
             try
             {
+                Logger.MethodEntry();
                 ApiRequestString("POST", "/axapi/v3/logoff", "POST", "", false, true);
+                Logger.MethodExit();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.LogError($"Error Logging Off: {LogHandler.FlattenException(ex)}");
                 return false;
             }
         }
 
-        public virtual void AddCertificate(SslCertificateRequest sslCertRequest, string importCertificate)
+        public void AddCertificate(SslCertificateRequest sslCertRequest, string importCertificate)
         {
-            var certData = Encoding.ASCII.GetBytes(importCertificate);
-            AddCertificate(sslCertRequest, certData);
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"Ssl Certificate Request: {JsonConvert.SerializeObject(sslCertRequest)}");
+                Logger.LogTrace($"importCertificate: {JsonConvert.SerializeObject(importCertificate)}");
+                var certData = Encoding.ASCII.GetBytes(importCertificate);
+                Logger.LogTrace("Got Cert Data Adding Certificate...");
+                AddCertificate(sslCertRequest, certData);
+                Logger.LogTrace("Added Certificate...");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.AddCertificate(SslCertificateRequest sslCertRequest, string importCertificate): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual void AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData)
+        public void AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData)
         {
-            var strRequest = JsonConvert.SerializeObject(sslCertRequest);
-            var requestArray = Encoding.ASCII.GetBytes(strRequest);
-
-            // Generate post objects
-            var postParameters = new Dictionary<string, object>
+            try
             {
-                {"json", new FileParameter(requestArray, "a10.json", "application/json")},
+                Logger.MethodEntry();
+                var strRequest = JsonConvert.SerializeObject(sslCertRequest);
+                Logger.LogTrace($"sslCertRequest: {JsonConvert.SerializeObject(strRequest)}");
+                var requestArray = Encoding.ASCII.GetBytes(strRequest);
+                Logger.LogTrace("Got requestArray...");
+                // Generate post objects
+                var postParameters = new Dictionary<string, object>
                 {
-                    "file",
-                    new FileParameter(certData, sslCertRequest.SslCertificate.File, "application/octet-stream")
-                }
-            };
+                    {"json", new FileParameter(requestArray, "a10.json", "application/json")},
+                    {
+                        "file",
+                        new FileParameter(certData, sslCertRequest.SslCertificate.File, "application/octet-stream")
+                    }
+                };
 
-            // Create request and receive response
-            var userAgent = "Keyfactor Agent";
-            var webResponse = MultipartFormDataPost("/axapi/v3/file/ssl-cert", userAgent, postParameters);
-
-            using (var responseReader = new StreamReader(webResponse.GetResponseStream() ?? Stream.Null))
-            {
+                // Create request and receive response
+                var userAgent = "Keyfactor Agent";
+                var webResponse = MultipartFormDataPost("/axapi/v3/file/ssl-cert", userAgent, postParameters);
+                Logger.LogTrace("Got webResponse...");
+                using var responseReader = new StreamReader(webResponse.GetResponseStream() ?? Stream.Null);
                 responseReader.ReadToEnd();
                 webResponse.Close();
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData): {LogHandler.FlattenException(ex)}");
+                throw;
             }
         }
 
-        public virtual bool AddPrivateKey(SslKeyRequest sslKeyRequest, string importCertificateKey)
+        public bool AddPrivateKey(SslKeyRequest sslKeyRequest, string importCertificateKey)
         {
-            var keyArray = Encoding.ASCII.GetBytes(importCertificateKey);
-            AddPrivateKey(sslKeyRequest, keyArray);
-            return true;
-        }
-
-        public virtual void AddPrivateKey(SslKeyRequest sslKeyRequest, byte[] keyArray)
-        {
-            var strRequest = JsonConvert.SerializeObject(sslKeyRequest);
-            var requestArray = Encoding.ASCII.GetBytes(strRequest);
-
-            // Generate post objects
-            var postParameters = new Dictionary<string, object>
+            try
             {
-                {"json", new FileParameter(requestArray, "a10.json", "application/json")},
-                {"file", new FileParameter(keyArray, sslKeyRequest.SslKey.File, "application/octet-stream")}
-            };
-
-            // Create request and receive response
-            var userAgent = "Keyfactor Agent";
-            var webResponse = MultipartFormDataPost("/axapi/v3/file/ssl-key", userAgent, postParameters);
-
-            // Process response
-            using (var responseReader = new StreamReader(webResponse.GetResponseStream() ?? Stream.Null))
+                Logger.MethodEntry();
+                Logger.LogTrace($"sslKeyRequest: {JsonConvert.SerializeObject(sslKeyRequest)}");
+                Logger.LogTrace($"importCertificateKey: {importCertificateKey}");
+                var keyArray = Encoding.ASCII.GetBytes(importCertificateKey);
+                Logger.LogTrace("Got keyArray...");
+                AddPrivateKey(sslKeyRequest, keyArray);
+                Logger.LogTrace("Added PrivateKey...");
+                return true;
+            }
+            catch (Exception ex)
             {
-                responseReader.ReadToEnd();
-                webResponse.Close();
+                Logger.LogError(
+                    $"Error In AddPrivateKey(SslKeyRequest sslKeyRequest, string importCertificateKey): {LogHandler.FlattenException(ex)}");
+                throw;
             }
         }
 
-        public virtual SslCollectionResponse GetCertificates(string certName = "")
+        public void AddPrivateKey(SslKeyRequest sslKeyRequest, byte[] keyArray)
         {
-            var strResponse = ApiRequestString("GET",
-                certName.Length == 0
-                    ? "/axapi/v3/slb/ssl-cert/oper"
-                    : $"/axapi/v3/slb/ssl-cert/oper?name={certName}", "GET", "", false, true);
-            var sslColResponse = JsonConvert.DeserializeObject<SslCollectionResponse>(strResponse);
-            return sslColResponse;
+            try
+            {
+                Logger.MethodEntry();
+                var strRequest = JsonConvert.SerializeObject(sslKeyRequest);
+                Logger.LogTrace($"sslKeyRequest: {JsonConvert.SerializeObject(sslKeyRequest)}");
+                var requestArray = Encoding.ASCII.GetBytes(strRequest);
+
+                // Generate post objects
+                var postParameters = new Dictionary<string, object>
+                {
+                    {"json", new FileParameter(requestArray, "a10.json", "application/json")},
+                    {"file", new FileParameter(keyArray, sslKeyRequest.SslKey.File, "application/octet-stream")}
+                };
+
+                // Create request and receive response
+                var userAgent = "Keyfactor Agent";
+                var webResponse = MultipartFormDataPost("/axapi/v3/file/ssl-key", userAgent, postParameters);
+                Logger.LogTrace("Got webResponse...");
+
+                // Process response
+                using var responseReader = new StreamReader(webResponse.GetResponseStream() ?? Stream.Null);
+                responseReader.ReadToEnd();
+                webResponse.Close();
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In AddPrivateKey(SslKeyRequest sslKeyRequest, byte[] keyArray): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual string GetCertificate(string certificateName)
+        public SslCollectionResponse GetCertificates(string certName = "")
         {
-            var strResponse = ApiRequestString("GET", $"/axapi/v3/file/ssl-cert/{certificateName}", "GET", "", false,
-                true);
-            return strResponse;
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"certName: {certName}");
+                var strResponse = ApiRequestString("GET",
+                    certName.Length == 0
+                        ? "/axapi/v3/slb/ssl-cert/oper"
+                        : $"/axapi/v3/slb/ssl-cert/oper?name={certName}", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslColResponse = JsonConvert.DeserializeObject<SslCollectionResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslColResponse)}");
+                Logger.MethodExit();
+                return sslColResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetCertificates(string certName): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual void RemoveCertificate(DeleteCertBaseRequest deleteCertRoot)
+        public string GetCertificate(string certificateName)
         {
-            ApiRequestString("POST", "/axapi/v3/pki/delete", "POST", JsonConvert.SerializeObject(deleteCertRoot),
-                false, true);
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", $"/axapi/v3/file/ssl-cert/{certificateName}", "GET", "",
+                    false,
+                    true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                Logger.MethodExit();
+                return strResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetCertificate(string certificateName): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual HttpWebRequest CreateRequest(string baseUrl, string postUrl)
+        public void RemoveCertificate(DeleteCertBaseRequest deleteCertRoot)
         {
-            var objRequest = (HttpWebRequest) WebRequest.Create(BaseUrl + postUrl);
-            return objRequest;
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"deleteCertRoot: {JsonConvert.SerializeObject(deleteCertRoot)}");
+                ApiRequestString("POST", "/axapi/v3/pki/delete", "POST", JsonConvert.SerializeObject(deleteCertRoot),
+                    false, true);
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In RemoveCertificate(DeleteCertBaseRequest deleteCertRoot): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual HttpWebResponse GetResponse(HttpWebRequest request)
+        public HttpWebRequest CreateRequest(string baseUrl, string postUrl)
         {
-            return (HttpWebResponse) request.GetResponse();
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"baseUrl: {baseUrl} postUrl: {postUrl}");
+                var objRequest = (HttpWebRequest) WebRequest.Create(BaseUrl + postUrl);
+                Logger.MethodExit();
+                return objRequest;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In CreateRequest(string baseUrl, string postUrl): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual string ApiRequestString(string strCall, string strPostUrl, string strMethod,
+        public HttpWebResponse GetResponse(HttpWebRequest request)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.MethodExit();
+                return (HttpWebResponse) request.GetResponse();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetResponse(HttpWebRequest request): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public string ApiRequestString(string strCall, string strPostUrl, string strMethod,
             string strQueryString,
             bool bWrite, bool bUseToken)
         {
-            var objRequest = CreateRequest(BaseUrl, strPostUrl);
-            objRequest.Method = strMethod;
-            objRequest.ContentType = "application/json";
-            if (bUseToken)
-                objRequest.Headers?.Add("Authorization", "A10 " + AuthenticationSignature);
-
-            if (!string.IsNullOrEmpty(strQueryString) && strMethod == "POST")
+            try
             {
-                var postBytes = Encoding.UTF8.GetBytes(strQueryString);
-                objRequest.ContentLength = postBytes.Length;
+                Logger.MethodEntry();
+                var objRequest = CreateRequest(BaseUrl, strPostUrl);
+                Logger.LogTrace(
+                    $"Request Object Created... method will be {strMethod} postURL will be {strPostUrl} query string will be {strQueryString}");
+                objRequest.Method = strMethod;
+                objRequest.ContentType = "application/json";
+                Logger.LogTrace($"Use Token {bUseToken}");
+                Logger.LogTrace($"AuthenticationSignature {AuthenticationSignature}");
+                if (bUseToken)
+                    objRequest.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
+
+                if (!string.IsNullOrEmpty(strQueryString) && strMethod == "POST")
+                {
+                    var postBytes = Encoding.UTF8.GetBytes(strQueryString);
+                    Logger.LogTrace($"postBytes.Length {postBytes.Length}");
+                    objRequest.ContentLength = postBytes.Length;
+                    //This is for testing on an Azure VM with an invalid certificate
+                    if (AllowInvalidCert)
+                        ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
+                    using var requestStream = objRequest.GetRequestStream();
+                    requestStream.Write(postBytes, 0, postBytes.Length);
+                    requestStream.Close();
+                }
+
+                Logger.LogTrace($"AllowInvalidCert {AllowInvalidCert}");
                 //This is for testing on an Azure VM with an invalid certificate
                 if (AllowInvalidCert)
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                using (var requestStream = objRequest.GetRequestStream())
-                {
-                    requestStream?.Write(postBytes, 0, postBytes.Length);
-                    requestStream?.Close();
-                }
-            }
-
-            //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert)
-                ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-            var objResponse = GetResponse(objRequest);
-
-            using (var strReader = new StreamReader(objResponse.GetResponseStream() ?? Stream.Null))
-            {
+                var objResponse = GetResponse(objRequest);
+                Logger.LogTrace("Got Response");
+                using var strReader = new StreamReader(objResponse.GetResponseStream() ?? Stream.Null);
                 var strResponse = strReader.ReadToEnd();
+                Logger.MethodExit();
                 return strResponse;
             }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In ApiRequestString: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        public virtual HttpWebResponse MultipartFormDataPost(string postUrl, string userAgent,
+        public HttpWebResponse MultipartFormDataPost(string postUrl, string userAgent,
             Dictionary<string, object> postParameters)
         {
-            var boundary = $"{Guid.NewGuid():N}";
-            var formDataBoundary = $"------------------------{boundary}";
-            var contentType = "multipart/form-data; boundary=" + formDataBoundary;
-
-            var formData = GetMultipartFormData(postParameters, boundary);
-
-            return PostForm(postUrl, userAgent, contentType, formData);
+            try
+            {
+                Logger.MethodEntry();
+                var boundary = $"{Guid.NewGuid():N}";
+                Logger.LogTrace($"boundary {boundary}");
+                var formDataBoundary = $"------------------------{boundary}";
+                Logger.LogTrace($"formDataBoundary {formDataBoundary}");
+                var contentType = "multipart/form-data; boundary=" + formDataBoundary;
+                Logger.LogTrace($"contentType {contentType}");
+                var formData = GetMultipartFormData(postParameters, boundary);
+                Logger.LogTrace("Got formData");
+                Logger.MethodExit();
+                return PostForm(postUrl, userAgent, contentType, formData);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In MultipartFormDataPost: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        protected virtual HttpWebResponse PostForm(string postUrl, string userAgent, string contentType,
+        private HttpWebResponse PostForm(string postUrl, string userAgent, string contentType,
             byte[] formData)
         {
-            var request = CreateRequest(BaseUrl, postUrl);
-            if (request == null) throw new NullReferenceException("request is not a http request");
-
-            // Set up the request properties.
-            request.Method = "POST";
-            request.ContentType = contentType;
-            request.UserAgent = userAgent;
-            request.ContentLength = formData.Length;
-            request.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
-            //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert)
-                ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-            // Send the form data to the request.
-            using (var requestStream = request.GetRequestStream())
+            try
             {
-                requestStream?.Write(formData, 0, formData.Length);
-                requestStream?.Close();
-            }
+                Logger.MethodEntry();
+                Logger.LogTrace($"postUrl {postUrl}");
+                Logger.LogTrace($"userAgent {userAgent}");
+                Logger.LogTrace($"contentType {contentType}");
+                var request = CreateRequest(BaseUrl, postUrl);
+                if (request == null) throw new NullReferenceException("request is not a http request");
+                Logger.LogTrace("Request Created...");
+                // Set up the request properties.
+                request.Method = "POST";
+                request.ContentType = contentType;
+                request.UserAgent = userAgent;
+                request.ContentLength = formData.Length;
+                Logger.LogTrace($"ContentLength {request.ContentLength}");
+                Logger.LogTrace($"AuthenticationSignature {AuthenticationSignature}");
+                request.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
+                //This is for testing on an Azure VM with an invalid certificate
+                if (AllowInvalidCert)
+                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
+                // Send the form data to the request.
+                using (var requestStream = request.GetRequestStream())
+                {
+                    requestStream.Write(formData, 0, formData.Length);
+                    requestStream.Close();
+                }
 
-            //This is for testing on an Azure VM with an invalid certificate
-            if (AllowInvalidCert)
-                ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-            return request?.GetResponse() as HttpWebResponse;
+                Logger.LogTrace($"AllowInvalidCert {AllowInvalidCert}");
+                //This is for testing on an Azure VM with an invalid certificate
+                if (AllowInvalidCert)
+                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
+                Logger.MethodExit();
+                return request.GetResponse() as HttpWebResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In PostForm: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
-        protected virtual byte[] GetMultipartFormData(Dictionary<string, object> postParameters, string boundary)
+        private byte[] GetMultipartFormData(Dictionary<string, object> postParameters, string boundary)
         {
-            byte[] formData;
-            using (Stream formDataStream = new MemoryStream())
+            try
             {
+                Logger.MethodEntry();
+                using Stream formDataStream = new MemoryStream();
                 var needsClrf = false;
 
                 foreach (var param in postParameters)
@@ -293,12 +444,18 @@ namespace Keyfactor.Extensions.Orchestrator.vThunder.api
 
                 // Dump the Stream into a byte[]
                 formDataStream.Position = 0;
-                formData = new byte[formDataStream.Length];
+                var formData = new byte[formDataStream.Length];
+                // ReSharper disable once MustUseReturnValue
                 formDataStream.Read(formData, 0, formData.Length);
                 formDataStream.Close();
+                Logger.MethodExit();
+                return formData;
             }
-
-            return formData;
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetMultipartFormData: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
         }
 
         public class FileParameter
