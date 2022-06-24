@@ -37,7 +37,7 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string CertStart { get; set; } = "-----BEGIN CERTIFICATE-----\n";
         protected internal virtual string CertEnd { get; set; } = "\n-----END CERTIFICATE-----";
         protected internal virtual string Alias { get; set; }
-        public string ExtensionName => "A10VThunder";
+        public string ExtensionName => "VThunderU";
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {

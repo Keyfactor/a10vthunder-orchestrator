@@ -1,13 +1,13 @@
 ﻿{
   "extensions": {
     "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
-      "CertStores.vThunder.Inventory": {
+      "CertStores.vThunderU.Inventory": {
         "assemblypath": "a10vthunder-orchestrator.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.vThunder.Inventory"
+        "TypeFullName": "a10vthunder_orchestrator.Jobs.Inventory"
       },
-      "CertStores.vThunder.Management": {
+      "CertStores.vThunderU.Management": {
         "assemblypath": "a10vthunder-orchestrator.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.vThunder.Management"
+        "TypeFullName": "a10vthunder_orchestrator.Jobs.Management"
       }
     }
   }

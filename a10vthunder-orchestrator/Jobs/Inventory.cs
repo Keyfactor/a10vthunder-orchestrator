@@ -24,7 +24,7 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string Protocol { get; set; }
         protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
-        public string ExtensionName => "A10VThunder";
+        public string ExtensionName => "VThunderU";
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
