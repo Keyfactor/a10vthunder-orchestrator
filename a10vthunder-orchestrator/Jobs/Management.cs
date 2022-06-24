@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using a10vthunder_orchestrator.Api;
 using a10vthunder_orchestrator.Api.Models;
-using a10vthunder_orchestrator.Exceptions;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -61,9 +60,12 @@ namespace a10vthunder_orchestrator.Jobs
             {
                 _logger.LogTrace("Entering APIClient Using clause");
                 if (string.IsNullOrEmpty(config.JobCertificate.Alias))
-                    return AnyErrors.ThrowError(_logger,
-                        new ArgumentException("Missing Alias/Overwrite, Operation Cannot Be Completed"),
-                        GetType().Name, "Management Add/Replace");
+                    return new JobResult
+                    {
+                        Result = OrchestratorJobStatusJobResult.Failure,
+                        JobHistoryId = config.JobHistoryId,
+                        FailureMessage = "Management Missing Alias/Overwrite, Operation Cannot Be Completed"
+                    };
 
                 ApiClient.Logon();
                 InventoryResult = CertManager.GetCert(ApiClient, config.JobCertificate.Alias);
@@ -89,7 +91,12 @@ namespace a10vthunder_orchestrator.Jobs
                         }
                         catch (Exception e)
                         {
-                            return AnyErrors.ThrowError(_logger, e, GetType().Name, "Error Adding Certificate");
+                            return new JobResult
+                            {
+                                Result = OrchestratorJobStatusJobResult.Failure,
+                                JobHistoryId = config.JobHistoryId,
+                                FailureMessage = $"Error Adding Certificate {LogHandler.FlattenException(e)}"
+                            };
                         }
 
                         break;
@@ -102,13 +109,22 @@ namespace a10vthunder_orchestrator.Jobs
                         }
                         catch (Exception e)
                         {
-                            return AnyErrors.ThrowError(_logger, e, GetType().Name, "Error Removing Certificate");
+                            return new JobResult
+                            {
+                                Result = OrchestratorJobStatusJobResult.Failure,
+                                JobHistoryId = config.JobHistoryId,
+                                FailureMessage = $"Error Removing Certificate {LogHandler.FlattenException(e)}"
+                            };
                         }
 
                         break;
                     default:
-                        return AnyErrors.ThrowError(_logger, new UnSupportedOperationException(), GetType().Name,
-                            "Management");
+                        return new JobResult
+                        {
+                            Result = OrchestratorJobStatusJobResult.Failure,
+                            JobHistoryId = config.JobHistoryId,
+                            FailureMessage = "Unsupported Operation, only Add, Remove and Replace are supported"
+                        };
                 }
 
                 _logger.LogTrace($"Finishing Process Job for {config.JobCertificate.Alias}");

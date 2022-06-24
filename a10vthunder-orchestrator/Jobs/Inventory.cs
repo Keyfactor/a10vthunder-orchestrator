@@ -1,6 +1,5 @@
 ﻿using System;
 using a10vthunder_orchestrator.Api;
-using a10vthunder_orchestrator.Exceptions;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -62,8 +61,12 @@ namespace a10vthunder_orchestrator.Jobs
                     _logger.MethodExit();
 
                     if (ReturnValue == false)
-                        return AnyErrors.ThrowError(_logger, new InvalidInventoryInvokeException(), GetType().Name,
-                            "Inventory");
+                            return new JobResult
+                            {
+                                Result = OrchestratorJobStatusJobResult.Failure,
+                                JobHistoryId = config.JobHistoryId,
+                                FailureMessage = "Error Invoking Inventory"
+                            };
 
                     if (Result.Errors.HasError)
                         return new JobResult
@@ -79,7 +82,12 @@ namespace a10vthunder_orchestrator.Jobs
                 }
                 catch (Exception e)
                 {
-                    return AnyErrors.ThrowError(_logger, e, GetType().Name, "Inventory");
+                    return new JobResult
+                    {
+                        Result = OrchestratorJobStatusJobResult.Failure,
+                        JobHistoryId = config.JobHistoryId,
+                        FailureMessage = $"Inventory Error Unknown {LogHandler.FlattenException(e)}"
+                    };
                 }
             }
         }
