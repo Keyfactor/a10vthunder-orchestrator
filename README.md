@@ -1,96 +1,157 @@
 # a10vThunder
-## Windows-orchestrator
 
 A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
 
-## Production Ready
+#### Integration status: 
 
-<!-- add integration specific information below -->
-*** 
-## **A10 vThunder Configuration**
+## About the Keyfactor Universal Orchestrator Capability
+
+This repository contains a Universal Orchestrator Capability which is a plugin to the Keyfactor Universal Orchestrator. Within the Keyfactor Platform, Orchestrators are used to manage “certificate stores” &mdash; collections of certificates and roots of trust that are found within and used by various applications.
+
+The Universal Orchestrator is part of the Keyfactor software distribution and is available via the Keyfactor customer portal. For general instructions on installing Capabilities, see the “Keyfactor Command Orchestrator Installation and Configuration Guide” section of the Keyfactor documentation. For configuration details of this specific Capability, see below in this readme.
+
+The Universal Orchestrator is the successor to the Windows Orchestrator. This Capability plugin only works with the Universal Orchestrator and does not work with the Windows Orchestrator.
+
+---
+
+
+
+
+---
+
+**A10 Networks vThunder Orchestrator**
 
 **Overview**
 
-The A10 vThunder Agent allows a user to inventory certificates and manage (add/remove/replace) certificates from the A10 vThunder platform.
+A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
 
-**1) Create the new Certificate store Type for the New A10 vThunder AnyAgent**
+This agent implements three job types – Inventory, Management Add, and Management Remove. Below are the steps necessary to configure this AnyAgent.  It supports adding certificates with or without private keys.
+
+
+**A10 vThunder Configuration**
+
+1. Read up on [A10 Networks ADC](https://a10networks.optrics.com/downloads/datasheets/Thunder-Application-Delivery-Controller-ADC.pdf) and how it works.
+2. A user account is needed with the appropriate permissions on vThunder to manage certificates.
+
+**1. Create the New Certificate Store Type for the A10 vThunder Orchestrator**
 
 In Keyfactor Command create a new Certificate Store Type similar to the one below:
 
-![image.png](/Media/Images/CertStores.gif)
+#### STORE TYPE CONFIGURATION
+SETTING TAB  |  CONFIG ELEMENT	| DESCRIPTION
+------|-----------|------------------
+Basic |Name	|Descriptive name for the Store Type.  A10 vThunder can be used.
+Basic |Short Name	|The short name that identifies the registered functionality of the orchestrator. Must be vThunderU
+Basic |Custom Capability|Un checked
+Basic |Job Types	|Inventory, Add, and Remove are the supported job types. 
+Basic |Needs Server	|Must be checked
+Basic |Blueprint Allowed	|checked
+Basic |Requires Store Password	|Determines if a store password is required when configuring an individual store.  This must be unchecked.
+Basic |Supports Entry Password	|Determined if an individual entry within a store can have a password.  This must be unchecked.
+Advanced |Store Path Type| Determines how the user will enter the store path when setting up the cert store.  Freeform
+Advanced |Supports Custom Alias	|Determines if an individual entry within a store can have a custom Alias.  This must be Required
+Advanced |Private Key Handling |Determines how the orchestrator deals with private keys.  Required
+Advanced |PFX Password Style |Determines password style for the PFX Password. Default
+Custom Fields|protocol|Name:protocol Display Name:Protocol Type:Multiple Choice (http,https) Default Value:https Required:True
+Custom Fields|allowInvalidCert|Name:allowInvalidCert Display Name:Allow Invalid Cert Type:Bool Default Value:false Required:True
+Entry Parameters|N/A| There are no Entry Parameters
+
+**Basic Settings:**
+
+![](images/CertStoreType-Basic.gif)
+
+**Advanced Settings:**
+
+![](images/CertStoreType-Advanced.gif)
+
+**Custom Fields:**
+
+![](images/CertStoreType-CustomFields.gif)
+
+**Entry Params:**
+
+![](images/CertStoreType-EntryParameters.gif)
+
+**2. Register the A10 vThunder Orchestrator with Keyfactor**
+See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your Keyfactor contact/representative.
+
+**3. Create a A10 vThunder Certificate Store within Keyfactor Command**
+In Keyfactor Command create a new Certificate Store similar to the one below
+
+![](images/CertStore1.gif)
+![](images/CertStore2.gif)
+
+#### STORE CONFIGURATION 
+CONFIG ELEMENT	|DESCRIPTION
+----------------|---------------
+Category	|The type of certificate store to be configured. Select category based on the display name configured above "VThunder Universal".
+Container	|This is a logical grouping of like stores. This configuration is optional and does not impact the functionality of the store.
+Client Machine	|The url to the vThunder api.  This file should the url and port of the vThunder api sample vThunder.test.com:1113.
+Store Path	|This will be "cert".  This is not used but just hard code it as "cert".
+Allow Invalid Cert|Only used for testing should be false in production.
+Protocol| http is only used for testing should be https in production
+Orchestrator	|This is the orchestrator server registered with the appropriate capabilities to manage this certificate store type. 
+Inventory Schedule	|The interval that the system will use to report on what certificates are currently in the store. 
+Use SSL	|This should be checked.
+User	|This is the user name for the vThunder api to access the certficate management functionality.
+Password |This is the password for the vThunder api to access the certficate management functionality.
+
+*** 
+
+#### Usage
+
+**Adding New Certificate No Map Entry**
+
+![](images/AddCertificateNoMapEntry.gif)
+
+*** 
+
+**Adding New Certificate With Map Entry**
+
+![](images/AddCertificateWithMapEntry.gif)
+
+*** 
+
+**Replace Certficate With Map Entry**
+
+![](images/ReplaceCertificateMapEntry.gif)
+
+*** 
+
+**Replace Certficate No Map Entry**
+
+![](images/ReplaceCertificateNoMapEntry.gif)
+
+*** 
+
+**Replace Certficate With Map Entry**
+
+![](images/ReplaceCertificateMapEntry.gif)
+
+*** 
+
+**Replace Certficate No Map Entry**
+
+![](images/ReplaceCertificateNoMapEntry.gif)
+
+***
+
+**Remove Certificate Map Entry**
+
+![](images/RemoveCertifcateMapEntry.gif)
+
+*** 
+
+**Remove Certficate No Map Entry**
+
+![](images/RemoveCertificateNoMapEntry.gif)
 
 
-- **Name** – Required. The display name of the new Certificate Store Type
-- **Short Name** – Required. MUST be "vThunder"
+#### TEST CASES
+Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
+------------|---------|----------------|--------------|----------|----------------|--------------
+1|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|The new KeyAndCertBTest certificate and private key will be created in the ADC/SSL Cerificates area on vThunder.|True
+1a|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|false|KeyAndCertBTest|Error Saying Overwrite Flag Needs To Be Used|True
 
-- **Needs Server, Blueprint Allowed** – checked as shown
-- **Requires Store Password, Supports Entry Password** – unchecked as shown
-- **Supports Custom Alias** – Forbidden. Not used.
-- **Use PowerShell** – Unchecked
-- **Store PathType** – Freeform (user will enter the the location of the store).
-- **Private Keys** – Optional
-- **PFX Password Style** – Default
-- **Job Types** – Inventory, Add and Remove are the 3 job types implemented by this AnyAgent
-   
-    
-**2) Register the A10 vThunder AnyAgent with Keyfactor**
 
-Open the Keyfactor Windows Agent Configuration Wizard and perform the tasks as illustrated below:
 
-![image.png](/Media/Images/ConfigWizard1.gif)
-
-- Click **<Next>**
-
-![image.png](/Media/Images/ConfigWizard2.gif)
-
-If you have configured the agent service previously, you should be able to skip to just click **<Next>**. Otherwise, enter the service account Username and Password you wish to run the Keyfactor Windows Agent Service under, click **<Update Windows Service Account>** and click **<Next>**.
-
-![image.png](/Media/Images/ConfigWizard3.gif)
-
-If you have configured the agent service previously, you should be able to skip to just re-enter the password to the service account the agent service will run under, click **<Validate Keyfactor Connection>** and then **<Next>**.
-
-![image.png](/Media/Images/ConfigWizard4.gif)
-
-Select the agent you are adding capabilities for (in this case, vThunder, and also select the specific capabilities (Inventory and Management in this example). Click **<Next>**.
-
-![image.png](/Media/Images/ConfigWizard5.gif)
-
-For each AnyAgent implementation, check Load assemblies containing extension modules from other location , browse to the location of the compiled AnyAgent dlls, and click **<Validate Capabilities>**. Once all AnyAgents have been validated, click **<Apply Configuration>**.
-
-![image.png](/Media/Images/ConfigWizard6.gif)
-
-If the Keyfactor Agent Configuration Wizard configured everything correctly, you should see the dialog above.
-
-**3) Create a Cert Store within the Keyfactor Portal**
-
-Navigate to Certificate Locations => Certificate Stores within Keyfactor Command to add an A10 vThunder certificate store. Below are the values that should be entered.
-
-![image.png](/Media/Images/CertStores.gif)
-
-- **Category** – Required. The vThunder category name must be selected
-- **Container** – Optional. Select a container if utilized.
-- **Client Machine** – Required. The server name or IP Address of the A10 vThunder API plus port.  [Azure Test Machine](https://portal.azure.com/#@csspkioutlook.onmicrosoft.com/resource/subscriptions/b3114ff1-bb92-45b6-9bd6-e4a1eed8c91e/resourceGroups/kVThunderA10/providers/Microsoft.Compute/virtualMachines/kVThunderA10/overview) port is :1113 for ssl.
-- **Store Path** – Required.  This will be one of the following based on what you are looking to add to the store.
-1. **[DomainName]\cert** where [DomainName] is the name of the domain in A10 vThunder you are looking to manage and inventory.
-
-2.  **cert** - This will use the default domain in A10 vThunder to manage and inventory **domain** certs
-
-3. **[DomainName]\pubcert** - This will give you the ability to Inventory the Pub Cert Folder on the specified domain where [DomainName] is the name of the domain in A10 vThunder you are looking to inventory.  
-
-4. **pubcert** - This will use the default domain in A10 vThunder to manage and inventory **public certs** certs
-
-### App Config Settings
-Keyfactor.AnyAgent.vThunder.dll.config (Deployed with all AnyAgent Binaries)
-```
-<appSettings>
-    <!--Should be https, made configurable in case needed for dev or whatever-->
-    <add key="Protocol" value="https" />
-    <!--true for debugging/testing on Azure VM since the cert will be invalid at .eastus.cloudapp.azure.com should be false in Production with a valid cert-->
-    <add key="AllowInvalidCerts" value="true" />
-</appSettings>
-```
-
-There are 2 App Config Settings
-1. Protocol should always be **https** in **Production** but you may need to switch to **http** for **Testing** only
-
-2. AllowInvalidCerts should be set to **false** in **Production**.  It is set to **true** in **Dev/Test** since the VM we are testing with a vThunder VM that does not have a valid SSL Certificate on the Azure Platform.
