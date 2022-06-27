@@ -78,11 +78,24 @@ namespace a10vthunder_orchestrator.Jobs
                         {
                             if (ExistingCert)
                             {
-                                _logger.LogTrace($"Starting Replace Job for {config.JobCertificate.Alias}");
-                                Replace(config, InventoryResult, ApiClient);
-                                _logger.LogTrace($"Finishing Replace Job for {config.JobCertificate.Alias}");
+                                if (config.Overwrite)
+                                {
+                                    _logger.LogTrace($"Starting Replace Job for {config.JobCertificate.Alias}");
+                                    Replace(config, InventoryResult, ApiClient);
+                                    _logger.LogTrace($"Finishing Replace Job for {config.JobCertificate.Alias}");
+                                }
+                                else
+                                {
+                                    return new JobResult
+                                    {
+                                        Result = OrchestratorJobStatusJobResult.Failure,
+                                        JobHistoryId = config.JobHistoryId,
+                                        FailureMessage = "You must use the overwrite flag to remove an existing certificate."
+                                    };
+                                }
                             }
-                            else
+                            
+                            if(!ExistingCert)
                             {
                                 _logger.LogTrace($"Starting Add Job for {config.JobCertificate.Alias}");
                                 Add(config, ApiClient);
