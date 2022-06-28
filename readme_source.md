@@ -29,7 +29,7 @@ Basic |Requires Store Password	|Determines if a store password is required when 
 Basic |Supports Entry Password	|Determined if an individual entry within a store can have a password.  This must be unchecked.
 Advanced |Store Path Type| Determines how the user will enter the store path when setting up the cert store.  Freeform
 Advanced |Supports Custom Alias	|Determines if an individual entry within a store can have a custom Alias.  This must be Required
-Advanced |Private Key Handling |Determines how the orchestrator deals with private keys.  Required
+Advanced |Private Key Handling |Determines how the orchestrator deals with private keys.  Optional
 Advanced |PFX Password Style |Determines password style for the PFX Password. Default
 Custom Fields|protocol|Name:protocol Display Name:Protocol Type:Multiple Choice (http,https) Default Value:https Required:True
 Custom Fields|allowInvalidCert|Name:allowInvalidCert Display Name:Allow Invalid Cert Type:Bool Default Value:false Required:True
@@ -79,57 +79,56 @@ Password |This is the password for the vThunder api to access the certficate man
 
 #### Usage
 
-**Adding New Certificate No Map Entry**
+**Adding New Certificate New Alias**
 
-![](images/AddCertificateNoMapEntry.gif)
-
-*** 
-
-**Adding New Certificate With Map Entry**
-
-![](images/AddCertificateWithMapEntry.gif)
+![](images/NewCertNewAlias.gif)
 
 *** 
 
-**Replace Certficate With Map Entry**
+**Replace Cert With Same Alias**
 
-![](images/ReplaceCertificateMapEntry.gif)
-
-*** 
-
-**Replace Certficate No Map Entry**
-
-![](images/ReplaceCertificateNoMapEntry.gif)
+![](images/ReplaceCertSameAlias.gif)
 
 *** 
 
-**Replace Certficate With Map Entry**
+**Add Cert No Private Key**
 
-![](images/ReplaceCertificateMapEntry.gif)
-
-*** 
-
-**Replace Certficate No Map Entry**
-
-![](images/ReplaceCertificateNoMapEntry.gif)
-
-***
-
-**Remove Certificate Map Entry**
-
-![](images/RemoveCertifcateMapEntry.gif)
+![](images/AddPubCert.gif)
 
 *** 
 
-**Remove Certficate No Map Entry**
+**Replace Cert No Private Key**
 
-![](images/RemoveCertificateNoMapEntry.gif)
+![](images/PubCertReplace.gif)
 
+*** 
+
+**Remove Cert No Private Key**
+
+![](images/RemovePubCert.gif)
+
+*** 
+
+**Remove Cert and Private Key**
+
+![](images/RemoveCertAndKey.gif)
+
+**Certificate Inventory**
+
+![](images/CertificateInventory.gif)
 
 #### TEST CASES
 Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
 ------------|---------|----------------|--------------|----------|----------------|--------------
 1|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|The new KeyAndCertBTest certificate and private key will be created in the ADC/SSL Cerificates area on vThunder.|True
-1a|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|false|KeyAndCertBTest|Error Saying Overwrite Flag Needs To Be Used|True
+1a|Replace Alias with no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|KeyAndCertBTest|Error Saying Overwrite Flag Needs To Be Used|True
+1b|Replace Alias with overwrite flag|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|Cert will be replaced because overwrite flag was used|True
+2|Add Cert Without Private Key|This will create a cert with no private key on vThunder|false|NewCertNoPk|Only Cert will be added to vThunder with no private key|True
+2a|Replace Cert Without Private Key|This will Replace a cert with no private key on vThunder|true|NewCertNoPk|Only Cert will be replaced on vThunder with no private key|True
+2b|Replace Cert Without Private Key no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|NewCertNoPk|Error Saying Overwrite Flag Needs To Be Used|True
+3|Remove Certificate and Private Key|Certificate and Private Key Will Be Removed from A10|N/A|KeyAndCertBTest|Cert and Key will be removed from vThunder and Keyfactor Store|True
+3a|Remove Certificate without Private Key|Certificate Will Be Removed from A10|N/A|KeyAndCertBTest|Cert will be removed from vThunder and Keyfactor Store|True
+4|Inventory Certificates with Private Key|Inventory of Certificates with private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
+4a|Inventory Certificates without Private Key|Inventory of Certificates without private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
 
 
