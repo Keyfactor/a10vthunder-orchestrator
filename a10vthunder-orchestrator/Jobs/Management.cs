@@ -90,7 +90,7 @@ namespace a10vthunder_orchestrator.Jobs
                                     {
                                         Result = OrchestratorJobStatusJobResult.Failure,
                                         JobHistoryId = config.JobHistoryId,
-                                        FailureMessage = "You must use the overwrite flag to remove an existing certificate."
+                                        FailureMessage = "You must use the overwrite flag to replace an existing certificate."
                                     };
                                 }
                             }
