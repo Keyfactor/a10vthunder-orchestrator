@@ -42,7 +42,7 @@ SETTING TAB  |  CONFIG ELEMENT	| DESCRIPTION
 ------|-----------|------------------
 Basic |Name	|Descriptive name for the Store Type.  A10 vThunder can be used.
 Basic |Short Name	|The short name that identifies the registered functionality of the orchestrator. Must be vThunderU
-Basic |Custom Capability|Un checked
+Basic |Custom Capability|Unchecked
 Basic |Job Types	|Inventory, Add, and Remove are the supported job types. 
 Basic |Needs Server	|Must be checked
 Basic |Blueprint Allowed	|checked
@@ -133,6 +133,8 @@ Password |This is the password for the vThunder api to access the certficate man
 **Remove Cert and Private Key**
 
 ![](Media/Images/RemoveCertAndKey.gif)
+
+*** 
 
 **Certificate Inventory**
 
