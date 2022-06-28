@@ -37,19 +37,19 @@ Entry Parameters|N/A| There are no Entry Parameters
 
 **Basic Settings:**
 
-![](/Media/Images/CertStoreType-Basic.gif)
+![](Media/Images/CertStoreType-Basic.gif)
 
 **Advanced Settings:**
 
-![](/Media/Images/CertStoreType-Advanced.gif)
+![](Media/Images/CertStoreType-Advanced.gif)
 
 **Custom Fields:**
 
-![](/Media/Images/CertStoreType-CustomFields.gif)
+![](Media/Images/CertStoreType-CustomFields.gif)
 
 **Entry Params:**
 
-![](/Media/Images/CertStoreType-EntryParameters.gif)
+![](Media/Images/CertStoreType-EntryParameters.gif)
 
 **2. Register the A10 vThunder Orchestrator with Keyfactor**
 See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your Keyfactor contact/representative.
@@ -57,8 +57,8 @@ See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your
 **3. Create a A10 vThunder Certificate Store within Keyfactor Command**
 In Keyfactor Command create a new Certificate Store similar to the one below
 
-![](/Media/Images/CertStore1.gif)
-![](/Media/Images/CertStore2.gif)
+![](Media/Images/CertStore1.gif)
+![](Media/Images/CertStore2.gif)
 
 #### STORE CONFIGURATION 
 CONFIG ELEMENT	|DESCRIPTION
@@ -81,41 +81,41 @@ Password |This is the password for the vThunder api to access the certficate man
 
 **Adding New Certificate New Alias**
 
-![](/Media/Images/NewCertNewAlias.gif)
+![](Media/Images/NewCertNewAlias.gif)
 
 *** 
 
 **Replace Cert With Same Alias**
 
-![](/Media/Images/ReplaceCertSameAlias.gif)
+![](Media/Images/ReplaceCertSameAlias.gif)
 
 *** 
 
 **Add Cert No Private Key**
 
-![](/Media/Images/AddPubCert.gif)
+![](Media/Images/AddPubCert.gif)
 
 *** 
 
 **Replace Cert No Private Key**
 
-![](/Media/Images/PubCertReplace.gif)
+![](Media/Images/PubCertReplace.gif)
 
 *** 
 
 **Remove Cert No Private Key**
 
-![](/Media/Images/RemovePubCert.gif)
+![](Media/Images/RemovePubCert.gif)
 
 *** 
 
 **Remove Cert and Private Key**
 
-![](/Media/Images/RemoveCertAndKey.gif)
+![](Media/Images/RemoveCertAndKey.gif)
 
 **Certificate Inventory**
 
-![](/Media/Images/CertificateInventory.gif)
+![](Media/Images/CertificateInventory.gif)
 
 #### TEST CASES
 Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
