@@ -35,7 +35,7 @@ This agent implements three job types – Inventory, Management Add, and Managem
 
 **1. Create the New Certificate Store Type for the A10 vThunder Orchestrator**
 
-In Keyfactor Command create a new Certificate Store Type similar to the one below:
+In Keyfactor Command Create a new Certificate Store Type similar to the one below:
 
 #### STORE TYPE CONFIGURATION
 SETTING TAB  |  CONFIG ELEMENT	| DESCRIPTION
