@@ -113,6 +113,8 @@ Password |This is the password for the vThunder api to access the certficate man
 
 ![](Media/Images/RemoveCertAndKey.gif)
 
+*** 
+
 **Certificate Inventory**
 
 ![](Media/Images/CertificateInventory.gif)
