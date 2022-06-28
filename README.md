@@ -58,19 +58,19 @@ Entry Parameters|N/A| There are no Entry Parameters
 
 **Basic Settings:**
 
-![](images/CertStoreType-Basic.gif)
+![](/Media/Images/CertStoreType-Basic.gif)
 
 **Advanced Settings:**
 
-![](images/CertStoreType-Advanced.gif)
+![](/Media/Images/CertStoreType-Advanced.gif)
 
 **Custom Fields:**
 
-![](images/CertStoreType-CustomFields.gif)
+![](/Media/Images/CertStoreType-CustomFields.gif)
 
 **Entry Params:**
 
-![](images/CertStoreType-EntryParameters.gif)
+![](/Media/Images/CertStoreType-EntryParameters.gif)
 
 **2. Register the A10 vThunder Orchestrator with Keyfactor**
 See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your Keyfactor contact/representative.
@@ -78,8 +78,8 @@ See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your
 **3. Create a A10 vThunder Certificate Store within Keyfactor Command**
 In Keyfactor Command create a new Certificate Store similar to the one below
 
-![](images/CertStore1.gif)
-![](images/CertStore2.gif)
+![](/Media/Images/CertStore1.gif)
+![](/Media/Images/CertStore2.gif)
 
 #### STORE CONFIGURATION 
 CONFIG ELEMENT	|DESCRIPTION
@@ -102,41 +102,41 @@ Password |This is the password for the vThunder api to access the certficate man
 
 **Adding New Certificate New Alias**
 
-![](images/NewCertNewAlias.gif)
+![](/Media/Images/NewCertNewAlias.gif)
 
 *** 
 
 **Replace Cert With Same Alias**
 
-![](images/ReplaceCertSameAlias.gif)
+![](/Media/Images/ReplaceCertSameAlias.gif)
 
 *** 
 
 **Add Cert No Private Key**
 
-![](images/AddPubCert.gif)
+![](/Media/Images/AddPubCert.gif)
 
 *** 
 
 **Replace Cert No Private Key**
 
-![](images/PubCertReplace.gif)
+![](/Media/Images/PubCertReplace.gif)
 
 *** 
 
 **Remove Cert No Private Key**
 
-![](images/RemovePubCert.gif)
+![](/Media/Images/RemovePubCert.gif)
 
 *** 
 
 **Remove Cert and Private Key**
 
-![](images/RemoveCertAndKey.gif)
+![](/Media/Images/RemoveCertAndKey.gif)
 
 **Certificate Inventory**
 
-![](images/CertificateInventory.gif)
+![](/Media/Images/CertificateInventory.gif)
 
 #### TEST CASES
 Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
