@@ -86,7 +86,14 @@ Entry Parameters|N/A| There are no Entry Parameters
 ![](Media/Images/CertStoreType-EntryParameters.gif)
 
 **2. Register the A10 vThunder Orchestrator with Keyfactor**
-See Keyfactor InstallingKeyfactorOrchestrators.pdf Documentation.  Get from your Keyfactor contact/representative.
+1. Stop the Keyfactor Universal Orchestrator Service for the orchestrator you plan to install this extension to run on.
+2. In the Keyfactor Orchestrator installation folder (by convention usually C:\Program Files\Keyfactor\Keyfactor Orchestrator), find the "extensions" folder. Underneath that, create a new folder named "vThunderU". You may choose to use a different name, but then you must edit the manifest.json file downloaded from GitHub (Step 3) and modify based on Step 5 below.
+3. Download the latest version of the A10 orchestrator extension from [GitHub](https://github.com/Keyfactor/a10vthunder-orchestrator).
+4. Copy the contents of the download installation zip file to the folder created in Step 2.
+5. (Optional) If you decided to name the folder created in Step 2 to something different than the suggested name (vThunderU), you will need to edit the manifest.json file. Modify "CertStores.{folder name}.Capability" to the folder name you created in Step 2.
+6. Start the Keyfactor Universal Orchestrator Service.
+
+Please reference the "Keyfactor Orchestrators Installation and Configuration Guide" obtainable from your Keyfactor contact/representative for more information regarding this step.
 
 **3. Create a A10 vThunder Certificate Store within Keyfactor Command**
 In Keyfactor Command create a new Certificate Store similar to the one below
