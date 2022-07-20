@@ -2,7 +2,7 @@
 
 A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
 
-#### Integration status: Pilot - Ready for use in test environments. Not for use in production.
+#### Integration status: Production - Ready for use in production environments.
 
 ## About the Keyfactor Universal Orchestrator Capability
 
