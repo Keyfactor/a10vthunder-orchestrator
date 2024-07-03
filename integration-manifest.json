@@ -1,32 +1,33 @@
 {
-  "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
-  "integration_type": "orchestrator",
-  "name": "a10vThunder",
-  "status": "production",
-  "update_catalog": true,
-  "link_github": true,
-  "support_level": "kf-supported",
-  "description": "A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.",
-  "about": {
-    "orchestrator": {
-      "win": {
-        "supportsCreateStore": false,
-        "supportsDiscovery": false,
-        "supportsManagementAdd": true,
-        "supportsManagementRemove": true,
-        "supportsReenrollment": false,
-        "supportsInventory": true,
-        "platformSupport": "Unused"
-      },
-      "linux": {
-        "supportsCreateStore": false,
-        "supportsDiscovery": false,
-        "supportsManagementAdd": true,
-        "supportsManagementRemove": true,
-        "supportsReenrollment": false,
-        "supportsInventory": true,
-        "platformSupport": "Unused"
-      }
+    "$schema": "/Users/hroszell/coding/dev/staff-tools/keyfactor.github.io/v2/integration-manifest-schema.json",
+    "integration_type": "orchestrator",
+    "name": "a10vThunder",
+    "status": "production",
+    "update_catalog": true,
+    "link_github": true,
+    "support_level": "kf-supported",
+    "description": "A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.",
+    "about": {
+        "orchestrator": {
+            "win": {
+                "supportsCreateStore": false,
+                "supportsDiscovery": false,
+                "supportsManagementAdd": true,
+                "supportsManagementRemove": true,
+                "supportsReenrollment": false,
+                "supportsInventory": true,
+                "platformSupport": "Unused"
+            },
+            "linux": {
+                "supportsCreateStore": false,
+                "supportsDiscovery": false,
+                "supportsManagementAdd": true,
+                "supportsManagementRemove": true,
+                "supportsReenrollment": false,
+                "supportsInventory": true,
+                "platformSupport": "Unused"
+            },
+            "store_types": []
+        }
     }
-  }
 }
