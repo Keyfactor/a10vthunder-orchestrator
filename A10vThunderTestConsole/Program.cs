@@ -32,9 +32,6 @@ namespace PaloAltoTestConsole
         public static string CaseName { get; set; }
         public static string CertAlias { get; set; }
         public static string ClientMachine { get; set; }
-        public static string DeviceGroup { get; set; }
-        public static string InventoryTrusted { get; set; }
-        public static string TemplateStackName { get; set; }
         public static string StorePath { get; set; }
         public static string Overwrite { get; set; }
         public static string ManagementType { get; set; }
@@ -60,9 +57,6 @@ namespace PaloAltoTestConsole
                 UserName = arguments["-user"];
                 Password = arguments["-password"];
                 StorePath = arguments["-storepath"];
-                DeviceGroup = arguments["-devicegroup"];
-                InventoryTrusted = arguments["-inventorytrusted"];
-                TemplateStackName = arguments["-templatestackname"];
                 ClientMachine = arguments["-clientmachine"];
             }
             else
@@ -75,12 +69,6 @@ namespace PaloAltoTestConsole
                 Password = Console.ReadLine();
                 Console.WriteLine("Enter Store Path");
                 StorePath = Console.ReadLine();
-                Console.WriteLine("Enter DeviceGroup");
-                DeviceGroup = Console.ReadLine();
-                Console.WriteLine("Inventory Trusted");
-                InventoryTrusted = Console.ReadLine();
-                Console.WriteLine("Template Stack Name");
-                TemplateStackName = Console.ReadLine();
                 Console.WriteLine("Enter ClientMachine");
                 ClientMachine = Console.ReadLine();
             }
@@ -96,9 +84,7 @@ namespace PaloAltoTestConsole
                 case "Inventory":
                     Console.WriteLine("Running Inventory");
                     InventoryJobConfiguration invJobConfig;
-                    invJobConfig = isPanorama
-                        ? GetPanoramaInventoryJobConfiguration()
-                        : GetInventoryJobConfiguration();
+                    invJobConfig = GetInventoryJobConfiguration();
                     Console.WriteLine("Got Inventory Config");
                     SubmitInventoryUpdate sui = GetItems;
                     var secretResolver = new Mock<IPAMSecretResolver>();
@@ -192,20 +178,11 @@ namespace PaloAltoTestConsole
 
         public static InventoryJobConfiguration GetInventoryJobConfiguration()
         {
-            var intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": false";
-            if (InventoryTrusted.ToUpper() == "TRUE")
-            {
-                intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": true";
-            }
 
-            var fileContent = File.ReadAllText("FirewallInventory.json").Replace("UserNameGoesHere", UserName)
+            var fileContent = File.ReadAllText("A10vThunderInventory.json").Replace("UserNameGoesHere", UserName)
                 .Replace("PasswordGoesHere", Password).Replace("ClientMachineGoesHere", ClientMachine)
-                .Replace("\"InventoryTrustedCerts\": false", intentoryTrustedReplaceString);
+                .Replace("PartitionNameGoesHere",StorePath);
             var jsonObject = JObject.Parse(fileContent);
-
-            // Navigate to the InventoryTrustedCerts property and set it to true
-            jsonObject["CertificateStoreDetails"]["Properties"] = jsonObject["CertificateStoreDetails"]["Properties"].ToString().Replace("\"InventoryTrustedCerts\": false", intentoryTrustedReplaceString);
-
 
             var result =
                 JsonConvert.DeserializeObject<InventoryJobConfiguration>(jsonObject.ToString());
@@ -213,31 +190,6 @@ namespace PaloAltoTestConsole
             return result;
         }
 
-        public static InventoryJobConfiguration GetPanoramaInventoryJobConfiguration()
-        {
-            var intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": false";
-            if (InventoryTrusted.ToUpper() == "TRUE")
-            {
-                intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": true";
-            }
-
-            var fileContent = File.ReadAllText("PanoramaInventory.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("TemplateNameGoesHere", StorePath)
-                .Replace("TemplateStackGoesHere", TemplateStackName)
-                .Replace("ClientMachineGoesHere", ClientMachine)
-                .Replace("DeviceGroupGoesHere", DeviceGroup);
-
-
-            var jsonObject = JObject.Parse(fileContent);
-
-            // Navigate to the InventoryTrustedCerts property and set it to true
-            jsonObject["CertificateStoreDetails"]["Properties"] = jsonObject["CertificateStoreDetails"]["Properties"].ToString().Replace("\"InventoryTrustedCerts\": false", intentoryTrustedReplaceString);
-
-
-            var result =
-                JsonConvert.DeserializeObject<InventoryJobConfiguration>(jsonObject.ToString());
-            return result;
-        }
 
         public static ManagementJobConfiguration GetManagementJobConfiguration()
         {
@@ -248,24 +200,15 @@ namespace PaloAltoTestConsole
                 overWriteReplaceString = "\"Overwrite\": true";
             }
 
-            var intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": false";
-            if (InventoryTrusted.ToUpper() == "TRUE")
-            {
-                intentoryTrustedReplaceString = "\"InventoryTrustedCerts\": true";
-            }
 
             var fileContent = File.ReadAllText("PanoramaMgmt.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("TemplateNameGoesHere", StorePath)
-                .Replace("DeviceGroupGoesHere", DeviceGroup).Replace("AliasGoesHere", CertAlias)
-                .Replace("TemplateStackGoesHere", TemplateStackName)
+                .Replace("PasswordGoesHere", Password).Replace("PartitionNameGoesHere", StorePath)
+                .Replace("AliasGoesHere", CertAlias)
                 .Replace("ClientMachineGoesHere", ClientMachine)
                 .Replace("\"Overwrite\": false",overWriteReplaceString)
                 .Replace("CertificateContentGoesHere", CertificateContent);
 
             var jsonObject = JObject.Parse(fileContent);
-
-            // Navigate to the InventoryTrustedCerts property and set it to true
-            jsonObject["CertificateStoreDetails"]["Properties"] = jsonObject["CertificateStoreDetails"]["Properties"].ToString().Replace("\"InventoryTrustedCerts\": false", intentoryTrustedReplaceString);
 
             var result =
                 JsonConvert.DeserializeObject<ManagementJobConfiguration>(jsonObject.ToString());
@@ -276,9 +219,8 @@ namespace PaloAltoTestConsole
         public static ManagementJobConfiguration GetRemoveJobConfiguration()
         {
             var fileContent = File.ReadAllText("ManagementRemove.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("TemplateNameGoesHere", StorePath)
-                .Replace("DeviceGroupGoesHere", DeviceGroup).Replace("AliasGoesHere", CertAlias)
-                .Replace("TemplateStackGoesHere", TemplateStackName)
+                .Replace("PasswordGoesHere", Password).Replace("PartitionNameGoesHere", StorePath)
+                .Replace("AliasGoesHere", CertAlias)
                 .Replace("ClientMachineGoesHere", ClientMachine);
             var result =
                 JsonConvert.DeserializeObject<ManagementJobConfiguration>(fileContent);

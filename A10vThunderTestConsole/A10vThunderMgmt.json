@@ -2,9 +2,9 @@
   "LastInventory": [],
   "CertificateStoreDetails": {
     "ClientMachine": "ClientMachineGoesHere",
-    "StorePath": "TemplateNameGoesHere",
+    "StorePath": "PartitionNameGoesHere",
     "StorePassword": null,
-    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\",\"DeviceGroup\":\"DeviceGroupGoesHere\",\"InventoryTrustedCerts\": false,\"TemplateStack\":\"TemplateStackGoesHere\"}",
+    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\"}",
     "Type": 105
   },
   "OperationType": 2,
@@ -26,5 +26,5 @@
   },
   "JobTypeId": "00000000-0000-0000-0000-000000000000",
   "JobId": "6808e1a2-04bb-4008-89fc-649662c0cd2b",
-  "Capability": "CertStores.PaloAlto.Management"
+  "Capability": "CertStores.ThunderSsl.Management"
 }

@@ -241,9 +241,9 @@
   ],
   "CertificateStoreDetails": {
     "ClientMachine": "ClientMachineGoesHere",
-    "StorePath": "TemplateNameGoesHere",
+    "StorePath": "PartitionNameGoesHere",
     "StorePassword": "",
-    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\",\"DeviceGroup\":\"DeviceGroupGoesHere\",\"InventoryTrustedCerts\": false,\"TemplateStack\":\"TemplateStackGoesHere\"}",
+    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\"}",
     "Type": 105
   },
   "JobCancelled": false,
@@ -256,5 +256,5 @@
   "JobProperties": null,
   "JobTypeId": "00000000-0000-0000-0000-000000000000",
   "JobId": "c7785480-8b15-4e12-b55d-3f73735cad6b",
-  "Capability": "CertStores.PaloAlto.Inventory"
+  "Capability": "CertStores.ThunderSsl.Inventory"
 }

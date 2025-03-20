@@ -4,9 +4,6 @@ cd C:\bin\Debug\netcoreapp3.1
 set FWMachine=fwMachine
 set FWApiUser=bhill
 set FWApiPassword=asfda!
-set PAMachine=paMachine
-set PAApiUser=bhill
-set PAApiPassword=asdfas
 
 
 echo ***********************************
