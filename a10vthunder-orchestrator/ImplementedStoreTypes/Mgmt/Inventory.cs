@@ -6,7 +6,7 @@ using Keyfactor.Orchestrators.Extensions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace a10vthunder_orchestrator.Jobs
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
 {
     public class Inventory : IInventoryJobExtension
     {
@@ -23,7 +23,7 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string Protocol { get; set; }
         protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
-        public string ExtensionName => "VThunderU";
+        public string ExtensionName => "ThunderMgmt";
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
@@ -61,12 +61,12 @@ namespace a10vthunder_orchestrator.Jobs
                     _logger.MethodExit();
 
                     if (ReturnValue == false)
-                            return new JobResult
-                            {
-                                Result = OrchestratorJobStatusJobResult.Failure,
-                                JobHistoryId = config.JobHistoryId,
-                                FailureMessage = "Error Invoking Inventory"
-                            };
+                        return new JobResult
+                        {
+                            Result = OrchestratorJobStatusJobResult.Failure,
+                            JobHistoryId = config.JobHistoryId,
+                            FailureMessage = "Error Invoking Inventory"
+                        };
 
                     if (Result.Errors.HasError)
                         return new JobResult
@@ -78,7 +78,7 @@ namespace a10vthunder_orchestrator.Jobs
                         };
 
                     return new JobResult
-                        {JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success};
+                    { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
                 }
                 catch (Exception e)
                 {

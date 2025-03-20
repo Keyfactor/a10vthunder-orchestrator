@@ -7,24 +7,27 @@ using a10vthunder_orchestrator.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 
-namespace a10vthunder_orchestrator.Jobs
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
 {
     public class Management : IManagementJobExtension
     {
         protected internal static Func<string, string> Pemify = ss =>
             ss.Length <= 64 ? ss : ss.Substring(0, 64) + "\n" + Pemify(ss.Substring(64));
 
-        private readonly ILogger<Management> _logger;
+        private ILogger _logger;
 
-        public Management(ILogger<Management> logger)
+        private readonly IPAMSecretResolver _resolver;
+
+        public Management(IPAMSecretResolver resolver)
         {
-            _logger = logger;
+            _resolver = resolver;
         }
 
         protected internal virtual string Protocol { get; set; }
@@ -36,10 +39,11 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string CertStart { get; set; } = "-----BEGIN CERTIFICATE-----\n";
         protected internal virtual string CertEnd { get; set; } = "\n-----END CERTIFICATE-----";
         protected internal virtual string Alias { get; set; }
-        public string ExtensionName => "VThunderU";
+        public string ExtensionName => "ThunderSsl";
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
+            _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
             _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
@@ -94,8 +98,8 @@ namespace a10vthunder_orchestrator.Jobs
                                     };
                                 }
                             }
-                            
-                            if(!ExistingCert)
+
+                            if (!ExistingCert)
                             {
                                 _logger.LogTrace($"Starting Add Job for {config.JobCertificate.Alias}");
                                 Add(config, ApiClient);
@@ -142,7 +146,7 @@ namespace a10vthunder_orchestrator.Jobs
 
                 _logger.LogTrace($"Finishing Process Job for {config.JobCertificate.Alias}");
                 return new JobResult
-                    {JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success};
+                { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
             }
         }
 
