@@ -6,8 +6,8 @@
         public string key { get; set; }
     }
 
-    public class Root
+    public class UpdateTemplateRequest
     {
-        public Certificate certificate { get; set; }
+        public UpdateTemplateCertificate certificate { get; set; }
     }
 }

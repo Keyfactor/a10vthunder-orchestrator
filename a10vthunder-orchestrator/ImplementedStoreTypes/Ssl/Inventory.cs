@@ -1,5 +1,6 @@
 ﻿using System;
 using a10vthunder_orchestrator.Api;
+using a10vthunder_orchestrator.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -48,6 +49,15 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 ApiClient.Logon();
+                ActivePartition activePartition = new ActivePartition
+                {
+                    curr_part_name = config.CertificateStoreDetails.StorePath
+                };
+                SetPartitionRequest partRequest = new SetPartitionRequest
+                {
+                    activepartition = activePartition
+                };
+                ApiClient.SetPartition(partRequest);
                 try
                 {
                     _logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);

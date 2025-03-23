@@ -14,6 +14,6 @@ namespace a10vthunder_orchestrator.Api.Models
 
     public class UpdateTemplateResponse
     {
-        public Certificate certificate { get; set; }
+        public UpdateTemplateResposneCertificate certificate { get; set; }
     }
 }

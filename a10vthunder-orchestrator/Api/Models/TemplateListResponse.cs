@@ -55,7 +55,7 @@ namespace a10vthunder_orchestrator.Api.Models
         [JsonProperty("early-data")]
         public int earlydata { get; set; }
         public string uuid { get; set; }
-        public Certificate certificate { get; set; }
+        public TemplateCertificate certificate { get; set; }
 
         [JsonProperty("a10-url")]
         public string a10url { get; set; }

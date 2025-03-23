@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PaloAltoTestConsole
+namespace A10vThunderTestConsole
 {
     public class KeyfactorEnrollmentRequest
     {

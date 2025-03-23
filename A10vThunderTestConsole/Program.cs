@@ -23,7 +23,7 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace PaloAltoTestConsole
+namespace A10vThunderTestConsole
 {
     internal class Program
     {
@@ -72,9 +72,6 @@ namespace PaloAltoTestConsole
                 Console.WriteLine("Enter ClientMachine");
                 ClientMachine = Console.ReadLine();
             }
-
-            //Determine if this is a firewall or Panorama Instance
-            var isPanorama = !Convert.ToBoolean(StorePath == "/");
 
             // Display message to user to provide parameters.
             Console.WriteLine("Running");
@@ -201,7 +198,7 @@ namespace PaloAltoTestConsole
             }
 
 
-            var fileContent = File.ReadAllText("PanoramaMgmt.json").Replace("UserNameGoesHere", UserName)
+            var fileContent = File.ReadAllText("A10vThunderMgmt.json").Replace("UserNameGoesHere", UserName)
                 .Replace("PasswordGoesHere", Password).Replace("PartitionNameGoesHere", StorePath)
                 .Replace("AliasGoesHere", CertAlias)
                 .Replace("ClientMachineGoesHere", ClientMachine)

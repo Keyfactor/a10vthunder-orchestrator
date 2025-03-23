@@ -106,6 +106,26 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public void SetPartition(SetPartitionRequest sslSetPartitionRequest)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"Set Partition Request: {JsonConvert.SerializeObject(sslSetPartitionRequest)}");
+                ApiRequestString("POST", "/axapi/v3/active-partition", "POST", JsonConvert.SerializeObject(sslSetPartitionRequest),
+                    false, true);
+                Logger.LogTrace("Set Partition Complete...");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.AddCertificate(SslCertificateRequest sslCertRequest, string importCertificate): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+
         public void AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData)
         {
             try
@@ -221,6 +241,45 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public TemplateListResponse GetTemplates()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", $"/axapi/v3/slb/template/server-ssl-list", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<TemplateListResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetTemplates(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateTemplateResponse UpdateTemplates(UpdateTemplateRequest request,string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
+                    false, true); 
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateTemplateResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetTemplates(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
         public string GetCertificate(string certificateName)
         {
             try
@@ -308,7 +367,7 @@ namespace a10vthunder_orchestrator.Api
                 if (bUseToken)
                     objRequest.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
 
-                if (!string.IsNullOrEmpty(strQueryString) && strMethod == "POST")
+                if (!string.IsNullOrEmpty(strQueryString) && (strMethod == "POST" || strMethod=="PUT"))
                 {
                     var postBytes = Encoding.UTF8.GetBytes(strQueryString);
                     Logger.LogTrace($"postBytes.Length {postBytes.Length}");

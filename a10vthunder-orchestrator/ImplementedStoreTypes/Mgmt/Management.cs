@@ -68,6 +68,9 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
                     };
 
                 ApiClient.Logon();
+                SetPartitionRequest partRequest=new SetPartitionRequest();
+                partRequest.activepartition.curr_part_name = config.CertificateStoreDetails.StorePath;
+                ApiClient.SetPartition(partRequest);
                 InventoryResult = CertManager.GetCert(ApiClient, config.JobCertificate.Alias);
                 ExistingCert = InventoryResult != null && InventoryResult?.InventoryList?.Count == 1;
 
