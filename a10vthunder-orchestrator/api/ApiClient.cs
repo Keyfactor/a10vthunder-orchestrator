@@ -406,53 +406,59 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
-        public string ApiRequestString(string strCall, string strPostUrl, string strMethod,
-            string strQueryString,
-            bool bWrite, bool bUseToken)
+        public string ApiRequestString(string strCall, string strPostUrl, string strMethod, string strQueryString, bool bWrite, bool bUseToken)
         {
             try
             {
                 Logger.MethodEntry();
                 var objRequest = CreateRequest(BaseUrl, strPostUrl);
-                Logger.LogTrace(
-                    $"Request Object Created... method will be {strMethod} postURL will be {strPostUrl} query string will be {strQueryString}");
                 objRequest.Method = strMethod;
                 objRequest.ContentType = "application/json";
-                Logger.LogTrace($"Use Token {bUseToken}");
-                Logger.LogTrace($"AuthenticationSignature {AuthenticationSignature}");
+
                 if (bUseToken)
                     objRequest.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
 
-                if (!string.IsNullOrEmpty(strQueryString) && (strMethod == "POST" || strMethod=="PUT"))
+                if (!string.IsNullOrEmpty(strQueryString) && (strMethod == "POST" || strMethod == "PUT"))
                 {
                     var postBytes = Encoding.UTF8.GetBytes(strQueryString);
-                    Logger.LogTrace($"postBytes.Length {postBytes.Length}");
                     objRequest.ContentLength = postBytes.Length;
-                    //This is for testing on an Azure VM with an invalid certificate
                     if (AllowInvalidCert)
                         ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                     using var requestStream = objRequest.GetRequestStream();
                     requestStream.Write(postBytes, 0, postBytes.Length);
-                    requestStream.Close();
                 }
 
-                Logger.LogTrace($"AllowInvalidCert {AllowInvalidCert}");
-                //This is for testing on an Azure VM with an invalid certificate
                 if (AllowInvalidCert)
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                var objResponse = GetResponse(objRequest);
-                Logger.LogTrace("Got Response");
-                using var strReader = new StreamReader(objResponse.GetResponseStream() ?? Stream.Null);
+
+                using var response = (HttpWebResponse)objRequest.GetResponse();
+
+                using var strReader = new StreamReader(response.GetResponseStream() ?? Stream.Null);
                 var strResponse = strReader.ReadToEnd();
+
+                // ✅ Check for non-2xx codes (shouldn’t happen here, but just in case)
+                if ((int)response.StatusCode < 200 || (int)response.StatusCode >= 300)
+                {
+                    HandleApiError(strResponse, (int)response.StatusCode);
+                }
+
                 Logger.MethodExit();
                 return strResponse;
             }
+            catch (WebException webEx) when (webEx.Response is HttpWebResponse errorResponse)
+            {
+                using var errorReader = new StreamReader(errorResponse.GetResponseStream() ?? Stream.Null);
+                var errorBody = errorReader.ReadToEnd();
+                HandleApiError(errorBody, (int)errorResponse.StatusCode);
+                throw;
+            }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In ApiRequestString: {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Unhandled Error In ApiRequestString: {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
+
 
         public HttpWebResponse MultipartFormDataPost(string postUrl, string userAgent,
             Dictionary<string, object> postParameters)
@@ -585,6 +591,26 @@ namespace a10vthunder_orchestrator.Api
             public byte[] File { get; set; }
             public string FileName { get; set; }
             public string ContentType { get; set; }
+        }
+
+        private void HandleApiError(string errorBody, int httpStatusCode)
+        {
+            try
+            {
+                var errorObj = JsonConvert.DeserializeObject<dynamic>(errorBody);
+                string message = errorObj?.response?.err?.msg ?? "Unknown error";
+                int code = errorObj?.response?.err?.code ?? 0;
+
+                var fullMessage = $"A10 API Error: HTTP {httpStatusCode} - {message} (Code: {code})";
+                Logger.LogError(fullMessage);
+
+                throw new ApplicationException(fullMessage);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to parse API error body: {errorBody}");
+                throw new ApplicationException($"HTTP {httpStatusCode} - Unexpected API error format", ex);
+            }
         }
 
         #endregion
