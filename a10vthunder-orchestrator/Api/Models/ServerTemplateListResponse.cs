@@ -13,7 +13,7 @@ namespace a10vthunder_orchestrator.Api.Models
         public string a10url { get; set; }
     }
 
-    public class TemplateListResponse
+    public class ServerTemplateListResponse
     {
         [JsonProperty("server-ssl-list")]
         public List<ServerSslList> serverssllist { get; set; }

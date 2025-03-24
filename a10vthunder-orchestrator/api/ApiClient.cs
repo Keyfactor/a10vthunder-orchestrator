@@ -125,6 +125,23 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public void WriteMemory()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                ApiRequestString("POST", "/axapi/v3/write/memory", "POST", "",
+                    false, true);
+                Logger.LogTrace("WriteMemory Complete...");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.WriteMemory: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
 
         public void AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData)
         {
@@ -241,26 +258,45 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
-        public TemplateListResponse GetTemplates()
+        public ServerTemplateListResponse GetServerTemplates()
         {
             try
             {
                 Logger.MethodEntry();
                 var strResponse = ApiRequestString("GET", $"/axapi/v3/slb/template/server-ssl-list", "GET", "", false, true);
                 Logger.LogTrace($"strResponse: {strResponse}");
-                var sslTemplateResponse = JsonConvert.DeserializeObject<TemplateListResponse>(strResponse);
+                var sslTemplateResponse = JsonConvert.DeserializeObject<ServerTemplateListResponse>(strResponse);
                 Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
                 Logger.MethodExit();
                 return sslTemplateResponse;
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In GetTemplates(): {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Error In GetServerTemplates(): {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
 
-        public UpdateTemplateResponse UpdateTemplates(UpdateTemplateRequest request,string templateName)
+        public ClientTemplateListResponse GetClientTemplates()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", $"/axapi/v3/slb/template/client-ssl-list", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<ClientTemplateListResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetClientTemplates(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request,string templateName)
         {
             try
             {
@@ -268,14 +304,34 @@ namespace a10vthunder_orchestrator.Api
                 var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
                     false, true); 
                 Logger.LogTrace($"strResponse: {strResponse}");
-                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateTemplateResponse>(strResponse);
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(strResponse);
                 Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
                 Logger.MethodExit();
                 return sslTemplateResponse;
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In GetTemplates(): {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateClientTemplateResponse UpdateClientTemplates(UpdateTemplateRequest request, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
+                    false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateClientTemplateResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }

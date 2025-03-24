@@ -166,15 +166,25 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
             {
                 _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
 
-                var assignedTemplates = apiClient.GetTemplates();
-                var templatesUsingCert = assignedTemplates?.serverssllist?.Where(t =>
+                var assignedServerTemplates = apiClient.GetServerTemplates();
+                var serverTemplatesUsingCert = assignedServerTemplates?.serverssllist?.Where(t =>
                     t?.certificate?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true).ToList();
 
-                bool certInUse = templatesUsingCert?.Any() == true;
+                var assignedClientTemplates = apiClient.GetClientTemplates();
+
+                var clientTemplatesUsingCert = assignedClientTemplates?.clientssllist?
+                    .Where(t => t?.certificatelist != null &&
+                                t.certificatelist.Any(c =>
+                                    c?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true))
+                    .ToList();
+
+
+                bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
+                bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
 
                 string originalAlias = config.JobCertificate.Alias;
 
-                if (certInUse)
+                if (certInUseByServerTemplate || certInUseByClientTemplate)
                 {
                     _logger.LogInformation($"Certificate {originalAlias} is currently assigned to one or more templates. Preparing to rename and re-import.");
 
@@ -187,23 +197,48 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                     // Step 1: Add new cert/key before updating templates
                     Add(config, apiClient);
 
-                    // Step 2: Update all templates using the old cert to now use the new one
-                    foreach (var template in templatesUsingCert)
+                    // Step 2: Update all the Server templates using the old cert to now use the new one
+                    if (certInUseByServerTemplate)
                     {
-                        _logger.LogTrace($"Updating template {template.name} to use new cert/key alias {newAlias}");
-
-                        var updateCertRequest = new UpdateTemplateRequest();
-                        var updateRequest = new UpdateTemplateCertificate
+                        foreach (var template in serverTemplatesUsingCert)
                         {
-                            cert = newAlias,
-                            key = newAlias
-                        };
+                            _logger.LogTrace($"Updating Server template {template.name} to use new cert/key alias {newAlias}");
 
-                        updateCertRequest.certificate = updateRequest;
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                cert = newAlias,
+                                key = newAlias
+                            };
 
-                        apiClient.UpdateTemplates(updateCertRequest, template.name);
+                            updateCertRequest.certificate = updateRequest;
 
-                        _logger.LogInformation($"Template {template.name} successfully updated.");
+                            apiClient.UpdateServerTemplates(updateCertRequest, template.name);
+
+                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                        }
+                    }
+                    
+                    // Step 2a: Update all the Client templates using the old cert to now use the new one
+                    if (certInUseByClientTemplate)
+                    {
+                        foreach (var template in clientTemplatesUsingCert)
+                        {
+                            _logger.LogTrace($"Updating Client template {template.name} to use new cert/key alias {newAlias}");
+
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                cert = newAlias,
+                                key = newAlias
+                            };
+
+                            updateCertRequest.certificate = updateRequest;
+
+                            apiClient.UpdateClientTemplates(updateCertRequest, template.name);
+
+                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                        }
                     }
                 }
                 else
@@ -212,7 +247,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                     Remove(config, inventoryResult, apiClient);
                     Add(config, apiClient);
                 }
-
+                apiClient.WriteMemory();
                 _logger.LogTrace($"Finished Replace method for {config.JobCertificate.Alias}");
             }
             catch (Exception ex)
@@ -250,6 +285,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                     };
 
                 apiClient.RemoveCertificate(deleteKeyRoot);
+                apiClient.WriteMemory();
                 _logger.LogTrace($"Successful Delete of the {configInfo.JobCertificate.Alias} Private Key");
             }
             catch (Exception ex)
@@ -346,7 +382,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                     apiClient.AddPrivateKey(sslKeyRequest, privateKeyString);
                     _logger.LogTrace($"Finished Add Key API Call for {configInfo.JobCertificate.Alias}");
                 }
-
+                apiClient.WriteMemory();
                 _logger.LogTrace($"Starting Log Off for Add {configInfo.JobCertificate.Alias}");
                 _logger.LogTrace($"Finished Log Off for Add {configInfo.JobCertificate.Alias}");
             }

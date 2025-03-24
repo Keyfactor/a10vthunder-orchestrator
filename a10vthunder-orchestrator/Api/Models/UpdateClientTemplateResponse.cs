@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace a10vthunder_orchestrator.Api.Models
 {
-    public class UpdateTemplateResposneCertificate
+    public class CleintCertificateList
     {
         public string cert { get; set; }
         public string key { get; set; }
@@ -12,8 +13,10 @@ namespace a10vthunder_orchestrator.Api.Models
         public string a10url { get; set; }
     }
 
-    public class UpdateTemplateResponse
+    public class UpdateClientTemplateResponse
     {
-        public UpdateTemplateResposneCertificate certificate { get; set; }
+        [JsonProperty("certificate-list")]
+        public List<CleintCertificateList> certificatelist { get; set; }
     }
+
 }
