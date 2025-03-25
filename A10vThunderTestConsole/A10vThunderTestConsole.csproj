@@ -21,16 +21,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="A10vThunderInventory.json">
+    <None Update="A10MgmtInventory.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="A10vThunderMgmt.json">
+    <None Update="A10SslInventory.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="A10SslManagement.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="A10MgmtManagement.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="FirewallInventory.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="ManagementRemove.json">
+    <None Update="A10MgmtManagementRemove.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="A10SsllManagementRemove.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="PanoramaInventory.json">

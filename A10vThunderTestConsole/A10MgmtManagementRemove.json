@@ -1,0 +1,30 @@
+{
+  "LastInventory": [],
+  "CertificateStoreDetails": {
+    "ClientMachine": "ClientMachineGoesHere",
+    "StorePath": "ScpPathGoesHere",
+    "StorePassword": null,
+    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\",\"ServerUseSsl\":\"true\",\"ScpServer\":\"ScpServerGoesHere\",\"ScpPort\":\"ScpPortGoesHere\",\"ScpUserName\":\"ScpUserNameGoesHere\",\"ScpPassword\":\"ScpPasswordGoesHere\"}",
+    "Type": 106
+  },
+  "OperationType": 3,
+  "Overwrite": false,
+  "JobCertificate": {
+    "Thumbprint": null,
+    "Contents": "",
+    "Alias": "AliasGoesHere",
+    "PrivateKeyPassword": null
+  },
+  "JobCancelled": false,
+  "ServerError": null,
+  "JobHistoryId": 22908,
+  "RequestStatus": 1,
+  "ServerUsername": "UserNameGoesHere",
+  "ServerPassword": "PasswordGoesHere",
+  "UseSSL": true,
+  "JobProperties": {
+  },
+  "JobTypeId": "00000000-0000-0000-0000-000000000000",
+  "JobId": "ba6248e2-eb3f-4403-9974-8df0e9f15f98",
+  "Capability": "CertStores.ThunderMgmt.Management"
+}

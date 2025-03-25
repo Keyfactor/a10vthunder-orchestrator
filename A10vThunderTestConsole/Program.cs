@@ -1,16 +1,5 @@
 ﻿// Copyright 2023 Keyfactor
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Licensed under the Apache License, Version 2.0
 
 using System;
 using System.Collections.Generic;
@@ -36,192 +25,230 @@ namespace A10vThunderTestConsole
         public static string Overwrite { get; set; }
         public static string ManagementType { get; set; }
         public static string CertificateContent { get; set; }
+        public static string ScpServer { get; set; }
+        public static string ScpPort { get; set; }
+        public static string ScpUserName { get; set; }
+        public static string ScpPassword { get; set; }
+        public static string StoreType { get; set; }
 
-#pragma warning disable 1998
+
         private static async Task Main(string[] args)
-#pragma warning restore 1998
         {
-
-           
-            var arguments = new Dictionary<string, string>();
             Thread.Sleep(20000);
-            foreach (var argument in args)
-            {
-                var splitted = argument.Split('=',2);
+            var arguments = ParseArgs(args);
 
-                if (splitted.Length == 2) arguments[splitted[0]] = splitted[1];
-            }
-            if (args.Length > 0)
+            CaseName = GetValue(arguments, "-casename", "Enter The Case Name Inventory or Management");
+            UserName = GetValue(arguments, "-user", "Enter User Name");
+            Password = GetValue(arguments, "-password", "Enter The Password");
+            StorePath = GetValue(arguments, "-storepath", "Enter Store Path");
+            StoreType = GetValue(arguments, "-storetype", "Enter Store Type");
+            if (StoreType.ToLower() == "mgmt")
             {
-                CaseName = arguments["-casename"];
-                UserName = arguments["-user"];
-                Password = arguments["-password"];
-                StorePath = arguments["-storepath"];
-                ClientMachine = arguments["-clientmachine"];
+                ScpServer = GetValue(arguments, "-scpserver", "Enter Scp Server");
+                ScpPort = GetValue(arguments, "-scpport", "Enter Scp Port");
+                ScpUserName = GetValue(arguments, "-scpusername", "Enter Scp User Name");
+                ScpPassword = GetValue(arguments, "-scppassword", "Enter Scp Password");
+            }
+            ClientMachine = GetValue(arguments, "-clientmachine", "Enter Client Machine");
+
+
+            Console.WriteLine("Running");
+
+            switch (CaseName?.ToUpper())
+            {
+                case "INVENTORY":
+                    RunInventory(arguments);
+                    break;
+
+                case "MANAGEMENT":
+                    ManagementType = GetValue(arguments, "-managementtype", "Select Management Type Add or Remove");
+                    if (ManagementType?.ToUpper() == "ADD")
+                        RunManagementAdd(arguments);
+                    else if (ManagementType?.ToUpper() == "REMOVE")
+                        RunManagementRemove(arguments);
+                    break;
+            }
+        }
+
+        private static Dictionary<string, string> ParseArgs(string[] args)
+        {
+            var result = new Dictionary<string, string>();
+            foreach (var arg in args)
+            {
+                var parts = arg.Split('=', 2);
+                if (parts.Length == 2)
+                    result[parts[0].ToLower()] = parts[1];
+            }
+            return result;
+        }
+
+        private static string GetValue(Dictionary<string, string> args, string key, string prompt)
+        {
+            return args.TryGetValue(key.ToLower(), out var value) ? value : Prompt(prompt);
+        }
+
+        private static string Prompt(string message)
+        {
+            Console.WriteLine(message);
+            return Console.ReadLine();
+        }
+
+        private static void RunInventory(Dictionary<string, string> args)
+        {
+            Console.WriteLine("Running Inventory");
+            var config = GetInventoryJobConfiguration(StoreType);
+            Console.WriteLine("Got Inventory Config");
+
+            var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
+            var inventory = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Inventory(secretResolver);
+            Console.WriteLine("Created Inventory Object");
+
+            var response = inventory.ProcessJob(config, GetItems);
+            Console.WriteLine("Inventory Response:");
+            Console.WriteLine(JsonConvert.SerializeObject(response));
+            Console.ReadLine();
+        }
+
+        private static void RunManagementAdd(Dictionary<string, string> args)
+        {
+            CertAlias = GetValue(args, "-certalias", "Enter Cert Alias");
+            Overwrite = GetValue(args, "-overwrite", "Overwrite (True or False)?");
+
+            Console.WriteLine("Generating Cert from KF API...");
+            var client = new KeyfactorClient();
+            CertificateContent = client.EnrollCertificate($"www.{CertAlias}.com").Result.CertificateInformation.Pkcs12Blob;
+
+            var config = GetManagementJobConfiguration(StoreType);
+            var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
+            var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+
+            var result = mgmt.ProcessJob(config);
+            Console.WriteLine(JsonConvert.SerializeObject(result));
+            Console.ReadLine();
+        }
+
+        private static void RunManagementRemove(Dictionary<string, string> args)
+        {
+            CertAlias = GetValue(args, "-certalias", "Enter Cert Alias");
+
+            var config = GetRemoveJobConfiguration(StoreType);
+            var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
+            var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+
+            var result = mgmt.ProcessJob(config);
+            Thread.Sleep(5000);
+            Console.WriteLine(JsonConvert.SerializeObject(result));
+            Console.ReadLine();
+        }
+
+        private static IPAMSecretResolver MockSecrets(string username, string password)
+        {
+            var mock = new Mock<IPAMSecretResolver>();
+            mock.Setup(m => m.Resolve(It.Is<string>(s => s == username))).Returns(username);
+            mock.Setup(m => m.Resolve(It.Is<string>(s => s == password))).Returns(password);
+            return mock.Object;
+        }
+
+        public static bool GetItems(IEnumerable<CurrentInventoryItem> items) => true;
+
+        private static InventoryJobConfiguration GetInventoryJobConfiguration(string storeType)
+        {
+            string fileContent = string.Empty;
+
+            if (storeType.ToLower() == "ssl")
+            {
+                fileContent = File.ReadAllText($"A10SslInventory.json")
+                    .Replace("UserNameGoesHere", UserName)
+                    .Replace("PasswordGoesHere", Password)
+                    .Replace("ClientMachineGoesHere", ClientMachine)
+                    .Replace("PartitionNameGoesHere", StorePath);
             }
             else
             {
-                Console.WriteLine("Enter The Case Name Inventory or Management");
-                CaseName = Console.ReadLine();
-                Console.WriteLine("Enter User Name");
-                UserName = Console.ReadLine();
-                Console.WriteLine("Enter The Password");
-                Password = Console.ReadLine();
-                Console.WriteLine("Enter Store Path");
-                StorePath = Console.ReadLine();
-                Console.WriteLine("Enter ClientMachine");
-                ClientMachine = Console.ReadLine();
+                fileContent = File.ReadAllText($"A10MgmtInventory.json")
+                .Replace("UserNameGoesHere", UserName)
+                .Replace("PasswordGoesHere", Password)
+                .Replace("ClientMachineGoesHere", ClientMachine)
+                .Replace("ScpPathGoesHere", StorePath)
+                .Replace("ScpServerGoesHere",ScpServer)
+                .Replace("ScpPortGoesHere",ScpPort)
+                .Replace("ScpUserNameGoesHere", ScpUserName)
+                .Replace("ScpPasswordGoesHere",ScpPassword);
             }
 
-            // Display message to user to provide parameters.
-            Console.WriteLine("Running");
 
-            switch (CaseName)
+
+            return JsonConvert.DeserializeObject<InventoryJobConfiguration>(JObject.Parse(fileContent).ToString());
+        }
+
+        private static ManagementJobConfiguration GetManagementJobConfiguration(string storeType)
+        {
+            var overwriteValue = Overwrite?.ToUpper() == "TRUE" ? "true" : "false";
+
+            string fileContent;
+            if (storeType.ToLower() == "ssl")
             {
-                case "Inventory":
-                    Console.WriteLine("Running Inventory");
-                    InventoryJobConfiguration invJobConfig;
-                    invJobConfig = GetInventoryJobConfiguration();
-                    Console.WriteLine("Got Inventory Config");
-                    SubmitInventoryUpdate sui = GetItems;
-                    var secretResolver = new Mock<IPAMSecretResolver>();
-                    secretResolver.Setup(m => m.Resolve(It.Is<string>(s => s == invJobConfig.ServerUsername)))
-                        .Returns(() => invJobConfig.ServerUsername);
-                    secretResolver.Setup(m => m.Resolve(It.Is<string>(s => s == invJobConfig.ServerPassword)))
-                        .Returns(() => invJobConfig.ServerPassword);
-                    var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Inventory(secretResolver.Object);
-                    Console.WriteLine("Created Inventory Object With Constructor");
-                    var invResponse = inv.ProcessJob(invJobConfig, sui);
-                    Console.WriteLine("Back From Inventory");
-                    Console.Write(JsonConvert.SerializeObject(invResponse));
-                    Console.ReadLine();
-                    break;
-                case "Management":
-                    Console.WriteLine("Select Management Type Add or Remove");
-                    string mgmtType;
-                    mgmtType = args.Length == 0 ? Console.ReadLine() : arguments["-managementtype"];
-
-                    if (mgmtType?.ToUpper() == "ADD")
-                    {
-                        if (args.Length > 0)
-                        {
-                            CertAlias = arguments["-certalias"];
-                            Overwrite = arguments["-overwrite"];
-                        }
-                        else
-                        {
-                            Console.WriteLine("Enter Cert Alias");
-                            CertAlias = Console.ReadLine();
-                            Console.WriteLine("Overwrite (True or False)?");
-                            Overwrite = Console.ReadLine();
-                        }
-
-                        Console.WriteLine("Start Generated Cert in KF API");
-                        var client = new KeyfactorClient();
-                        var kfResult = client.EnrollCertificate($"www.{CertAlias}.com").Result;
-                        CertificateContent = kfResult.CertificateInformation.Pkcs12Blob;
-                        Console.WriteLine("End Generated Cert in KF API");
-
-                        var jobConfiguration = GetManagementJobConfiguration();
-                        var mgmtSecretResolver = new Mock<IPAMSecretResolver>();
-                        mgmtSecretResolver
-                            .Setup(m => m.Resolve(It.Is<string>(s => s == jobConfiguration.ServerUsername)))
-                            .Returns(() => jobConfiguration.ServerUsername);
-                        mgmtSecretResolver
-                            .Setup(m => m.Resolve(It.Is<string>(s => s == jobConfiguration.ServerPassword)))
-                            .Returns(() => jobConfiguration.ServerPassword);
-                        var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(mgmtSecretResolver.Object);
-
-                        var result = mgmt.ProcessJob(jobConfiguration);
-                        Console.Write(JsonConvert.SerializeObject(result));
-                        Console.ReadLine();
-                    }
-
-                    if (mgmtType.ToUpper() == "REMOVE")
-                    {
-                        if (args.Length > 0)
-                        {
-                            CertAlias = arguments["-certalias"];
-                        }
-                        else
-                        {
-                            Console.WriteLine("Enter Cert Alias");
-                            CertAlias = Console.ReadLine();
-                        }
-
-                        var jobConfig = GetRemoveJobConfiguration();
-
-                        var mgmtSecretResolver = new Mock<IPAMSecretResolver>();
-                        mgmtSecretResolver.Setup(m => m.Resolve(It.Is<string>(s => s == jobConfig.ServerUsername)))
-                            .Returns(() => jobConfig.ServerUsername);
-                        mgmtSecretResolver.Setup(m => m.Resolve(It.Is<string>(s => s == jobConfig.ServerPassword)))
-                            .Returns(() => jobConfig.ServerPassword);
-                        var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(mgmtSecretResolver.Object);
-                        var result = mgmt.ProcessJob(jobConfig);
-                        Thread.Sleep(5000);
-                        Console.Write(JsonConvert.SerializeObject(result));
-                        Console.ReadLine();
-                    }
-
-                    break;
-            }
-        }
-
-
-        public static bool GetItems(IEnumerable<CurrentInventoryItem> items)
-        {
-            return true;
-        }
-
-        public static InventoryJobConfiguration GetInventoryJobConfiguration()
-        {
-
-            var fileContent = File.ReadAllText("A10vThunderInventory.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("ClientMachineGoesHere", ClientMachine)
-                .Replace("PartitionNameGoesHere",StorePath);
-            var jsonObject = JObject.Parse(fileContent);
-
-            var result =
-                JsonConvert.DeserializeObject<InventoryJobConfiguration>(jsonObject.ToString());
-
-            return result;
-        }
-
-
-        public static ManagementJobConfiguration GetManagementJobConfiguration()
-        {
-
-            var overWriteReplaceString = "\"Overwrite\": false";
-            if (Overwrite.ToUpper() == "TRUE")
-            {
-                overWriteReplaceString = "\"Overwrite\": true";
-            }
-
-
-            var fileContent = File.ReadAllText("A10vThunderMgmt.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("PartitionNameGoesHere", StorePath)
+                fileContent = File.ReadAllText($"A10SslManagement.json")
+                .Replace("UserNameGoesHere", UserName)
+                .Replace("PasswordGoesHere", Password)
+                .Replace("PartitionNameGoesHere", StorePath)
                 .Replace("AliasGoesHere", CertAlias)
                 .Replace("ClientMachineGoesHere", ClientMachine)
-                .Replace("\"Overwrite\": false",overWriteReplaceString)
+                .Replace("\"Overwrite\": false", $"\"Overwrite\": {overwriteValue}")
                 .Replace("CertificateContentGoesHere", CertificateContent);
+            }
+            else
+            {
+                fileContent = File.ReadAllText($"A10SslManagement.json")
+                .Replace("UserNameGoesHere", UserName)
+                .Replace("PasswordGoesHere", Password)
+                .Replace("PartitionNameGoesHere", StorePath)
+                .Replace("AliasGoesHere", CertAlias)
+                .Replace("ClientMachineGoesHere", ClientMachine)
+                .Replace("\"Overwrite\": false", $"\"Overwrite\": {overwriteValue}")
+                .Replace("ScpPathGoesHere", StorePath)
+                .Replace("ScpServerGoesHere", ScpServer)
+                .Replace("ScpPortGoesHere", ScpPort)
+                .Replace("ScpUserNameGoesHere", ScpUserName)
+                .Replace("ScpPasswordGoesHere", ScpPassword)
+                .Replace("CertificateContentGoesHere", CertificateContent);
+            }
 
-            var jsonObject = JObject.Parse(fileContent);
-
-            var result =
-                JsonConvert.DeserializeObject<ManagementJobConfiguration>(jsonObject.ToString());
-
-            return result;
+            return JsonConvert.DeserializeObject<ManagementJobConfiguration>(JObject.Parse(fileContent).ToString());
         }
 
-        public static ManagementJobConfiguration GetRemoveJobConfiguration()
+        private static ManagementJobConfiguration GetRemoveJobConfiguration(string storeType)
         {
-            var fileContent = File.ReadAllText("ManagementRemove.json").Replace("UserNameGoesHere", UserName)
-                .Replace("PasswordGoesHere", Password).Replace("PartitionNameGoesHere", StorePath)
-                .Replace("AliasGoesHere", CertAlias)
-                .Replace("ClientMachineGoesHere", ClientMachine);
-            var result =
-                JsonConvert.DeserializeObject<ManagementJobConfiguration>(fileContent);
-            return result;
+
+            string fileContent = string.Empty;
+
+            if (storeType.ToLower() == "ssl")
+            {
+                fileContent = File.ReadAllText($"A10{storeType}Management.json")
+                 .Replace("UserNameGoesHere", UserName)
+                 .Replace("PasswordGoesHere", Password)
+                 .Replace("PartitionNameGoesHere", StorePath)
+                 .Replace("AliasGoesHere", CertAlias)
+                 .Replace("ClientMachineGoesHere", ClientMachine);
+            }
+            else
+            {
+                fileContent = File.ReadAllText($"A10{storeType}Management.json")
+                 .Replace("UserNameGoesHere", UserName)
+                 .Replace("PasswordGoesHere", Password)
+                 .Replace("PartitionNameGoesHere", StorePath)
+                 .Replace("AliasGoesHere", CertAlias)
+                 .Replace("ScpPathGoesHere", StorePath)
+                 .Replace("ScpServerGoesHere", ScpServer)
+                 .Replace("ScpPortGoesHere", ScpPort)
+                 .Replace("ScpUserNameGoesHere", ScpUserName)
+                 .Replace("ScpPasswordGoesHere", ScpPassword)
+                 .Replace("ClientMachineGoesHere", ClientMachine);
+            }
+
+
+
+            return JsonConvert.DeserializeObject<ManagementJobConfiguration>(fileContent);
         }
     }
 }

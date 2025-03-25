@@ -1,12 +1,15 @@
 ﻿using System;
-using a10vthunder_orchestrator.Api;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Renci.SshNet;
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
+namespace linux_scp_orchestrator.ImplementedStoreTypes
 {
     public class Inventory : IInventoryJobExtension
     {
@@ -17,79 +20,86 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
             _logger = logger;
         }
 
-        protected internal virtual InventoryResult Result { get; set; }
-        protected internal virtual CertManager CertificateManager { get; set; }
-        protected internal virtual ApiClient ApiClient { get; set; }
-        protected internal virtual string Protocol { get; set; }
-        protected internal virtual bool AllowInvalidCert { get; set; }
-        protected internal virtual bool ReturnValue { get; set; }
         public string ExtensionName => "ThunderMgmt";
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
             _logger.MethodEntry();
 
-            dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
-            Protocol = properties != null &&
-                       (properties.protocol == null || string.IsNullOrEmpty(properties.protocol.Value))
-                ? "https"
-                : properties?.protocol.Value;
-            AllowInvalidCert =
-                properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
-                    ? false
-                    : bool.Parse(properties.allowInvalidCert.Value);
-
-            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
-                $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
+            try
             {
-                ApiClient.Logon();
-                try
+                dynamic props = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+
+                string host = props.host;
+                string username = props.username;
+                string password = props.password;
+                string path = props.path;
+                int port = props.port != null ? (int)props.port : 22;
+
+                _logger.LogInformation($"Connecting to {host} via SCP to retrieve PEM from {path}");
+
+                string pemContent;
+
+                using (var client = new ScpClient(host, port, username, password))
                 {
-                    _logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);
-                    _logger.LogTrace(
-                        $"Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
-
-                    _logger.LogTrace("Entering A10 VThunder DataPower: Certificate Inventory");
-                    _logger.LogTrace(
-                        $"Entering processJob for Certificate Store: {config.CertificateStoreDetails.ClientMachine} {config.CertificateStoreDetails.StorePath}");
-                    CertificateManager = new CertManager();
-                    Result = CertificateManager.GetCerts(ApiClient);
-                    _logger.LogTrace($"Got {Result.InventoryList.Count} Certs from Inventory");
-
-                    ReturnValue = submitInventory.Invoke(Result.InventoryList);
-                    _logger.LogTrace("Invoked Inventory");
-                    _logger.MethodExit();
-
-                    if (ReturnValue == false)
-                        return new JobResult
-                        {
-                            Result = OrchestratorJobStatusJobResult.Failure,
-                            JobHistoryId = config.JobHistoryId,
-                            FailureMessage = "Error Invoking Inventory"
-                        };
-
-                    if (Result.Errors.HasError)
-                        return new JobResult
-                        {
-                            JobHistoryId = config.JobHistoryId,
-                            FailureMessage =
-                                $"Inventory had issues retrieving some certificates: {Result.Errors.ErrorMessage}",
-                            Result = OrchestratorJobStatusJobResult.Warning
-                        };
-
-                    return new JobResult
-                    { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
-                }
-                catch (Exception e)
-                {
-                    return new JobResult
+                    client.Connect();
+                    using (var ms = new MemoryStream())
                     {
-                        Result = OrchestratorJobStatusJobResult.Failure,
-                        JobHistoryId = config.JobHistoryId,
-                        FailureMessage = $"Inventory Error Unknown {LogHandler.FlattenException(e)}"
-                    };
+                        client.Download(path, ms);
+                        pemContent = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                    }
+                    client.Disconnect();
                 }
+
+                string cert = ExtractPemBlock(pemContent, "CERTIFICATE");
+                string key = ExtractPemBlock(pemContent, "PRIVATE KEY");
+
+                if (string.IsNullOrEmpty(cert) || string.IsNullOrEmpty(key))
+                {
+                    throw new Exception("Failed to extract certificate or key from PEM.");
+                }
+
+                var inventoryItem = new CurrentInventoryItem
+                {
+                    ItemStatus = OrchestratorInventoryItemStatus.Unknown,
+                    Alias = Path.GetFileName(path),
+                    PrivateKeyEntry = true,
+                    UseChainLevel = false,
+                    Certificates = new[] { cert }
+                };
+
+                bool result = submitInventory.Invoke(new List<CurrentInventoryItem> { inventoryItem });
+
+                return new JobResult
+                {
+                    JobHistoryId = config.JobHistoryId,
+                    Result = result ? OrchestratorJobStatusJobResult.Success : OrchestratorJobStatusJobResult.Failure,
+                    FailureMessage = result ? null : "Inventory submission failed."
+                };
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error during SCP Inventory job: {ex.Message}");
+                return new JobResult
+                {
+                    Result = OrchestratorJobStatusJobResult.Failure,
+                    JobHistoryId = config.JobHistoryId,
+                    FailureMessage = $"Inventory Error: {ex.Message}"
+                };
+            }
+            finally
+            {
+                _logger.MethodExit();
+            }
+        }
+
+        private string ExtractPemBlock(string pem, string blockType)
+        {
+            var match = Regex.Match(pem,
+                $"-----BEGIN {blockType}-----(.*?)-----END {blockType}-----",
+                RegexOptions.Singleline);
+
+            return match.Success ? match.Value : null;
         }
     }
 }
