@@ -355,6 +355,62 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public void ReplaceCertificateAndKey(string certUrl, string keyUrl)
+        {
+            Logger.MethodEntry();
+
+            try
+            {
+                // 1. Upload certificate
+                var certRequest = new ManagementCertRequest
+                {
+                    certificate = new ManagementCertificate
+                    {
+                        load = 1,
+                        fileurl = certUrl
+                    }
+                };
+
+                Logger.LogInformation($"Uploading certificate from {certUrl}");
+                ApiRequestString("POST", "/axapi/v3/pki/certificate", "POST", JsonConvert.SerializeObject(certRequest), false, true);
+
+                // 2. Upload private key
+                var keyRequest = new ManagementPrivateKeyRequest
+                {
+                    privatekey = new PrivateKey
+                    {
+                        load = 1,
+                        fileurl = keyUrl
+                    }
+                };
+
+                Logger.LogInformation($"Uploading private key from {keyUrl}");
+                ApiRequestString("POST", "/axapi/v3/pki/private-key", "POST", JsonConvert.SerializeObject(keyRequest), false, true);
+
+                // 3. Restart secure system
+                var restartRequest = new ManagementCertRestartRequest
+                {
+                    secure = new Secure
+                    {
+                        restart = 1
+                    }
+                };
+
+                Logger.LogInformation("Restarting secure system to apply certificate and key.");
+                ApiRequestString("POST", "/axapi/v3/system/secure", "POST", JsonConvert.SerializeObject(restartRequest), false, true);
+
+                Logger.LogInformation("Certificate and key replaced and secure system restarted.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error replacing certificate and key: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+
+            Logger.MethodExit();
+        }
+
+
         public void RemoveCertificate(DeleteCertBaseRequest deleteCertRoot)
         {
             try

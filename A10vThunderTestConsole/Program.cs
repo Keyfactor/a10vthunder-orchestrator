@@ -95,17 +95,29 @@ namespace A10vThunderTestConsole
 
         private static void RunInventory(Dictionary<string, string> args)
         {
+            StoreType = GetValue(args, "-storetype", "Enter Cert Alias");
+
             Console.WriteLine("Running Inventory");
             var config = GetInventoryJobConfiguration(StoreType);
             Console.WriteLine("Got Inventory Config");
 
             var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
-            var inventory = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Inventory(secretResolver);
-            Console.WriteLine("Created Inventory Object");
 
-            var response = inventory.ProcessJob(config, GetItems);
+            JobResult result;
+
+            if (StoreType.ToLower() == "ssl")
+            {
+                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Inventory(secretResolver);
+                result = inv.ProcessJob(config, GetItems);
+            }
+            else
+            {
+                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Inventory(secretResolver);
+                result = inv.ProcessJob(config, GetItems);
+            }
+
             Console.WriteLine("Inventory Response:");
-            Console.WriteLine(JsonConvert.SerializeObject(response));
+            Console.WriteLine(JsonConvert.SerializeObject(result));
             Console.ReadLine();
         }
 
@@ -113,6 +125,7 @@ namespace A10vThunderTestConsole
         {
             CertAlias = GetValue(args, "-certalias", "Enter Cert Alias");
             Overwrite = GetValue(args, "-overwrite", "Overwrite (True or False)?");
+            StoreType = GetValue(args, "-storetype", "Enter Store Type");
 
             Console.WriteLine("Generating Cert from KF API...");
             var client = new KeyfactorClient();
@@ -120,9 +133,19 @@ namespace A10vThunderTestConsole
 
             var config = GetManagementJobConfiguration(StoreType);
             var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
-            var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
 
-            var result = mgmt.ProcessJob(config);
+            JobResult result;
+
+            if (StoreType.ToLower() == "ssl")
+            {
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+                result = mgmt.ProcessJob(config);
+            }
+            else
+            {
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Management(secretResolver);
+                result = mgmt.ProcessJob(config);
+            }
             Console.WriteLine(JsonConvert.SerializeObject(result));
             Console.ReadLine();
         }
@@ -130,12 +153,23 @@ namespace A10vThunderTestConsole
         private static void RunManagementRemove(Dictionary<string, string> args)
         {
             CertAlias = GetValue(args, "-certalias", "Enter Cert Alias");
+            StoreType = GetValue(args, "-storetype", "Enter Store Type");
+
 
             var config = GetRemoveJobConfiguration(StoreType);
             var secretResolver = MockSecrets(config.ServerUsername, config.ServerPassword);
-            var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+            JobResult result;
 
-            var result = mgmt.ProcessJob(config);
+            if (StoreType.ToLower() == "ssl")
+            {
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+                result = mgmt.ProcessJob(config);
+            }
+            else
+            {
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Management(secretResolver);
+                result = mgmt.ProcessJob(config);
+            }
             Thread.Sleep(5000);
             Console.WriteLine(JsonConvert.SerializeObject(result));
             Console.ReadLine();
@@ -172,8 +206,8 @@ namespace A10vThunderTestConsole
                 .Replace("ScpPathGoesHere", StorePath)
                 .Replace("ScpServerGoesHere",ScpServer)
                 .Replace("ScpPortGoesHere",ScpPort)
-                .Replace("ScpUserNameGoesHere", ScpUserName)
-                .Replace("ScpPasswordGoesHere",ScpPassword);
+                .Replace("ScpUserGoesHere", ScpUserName)
+                .Replace("ScpPwdGoesHere",ScpPassword);
             }
 
 
@@ -199,7 +233,7 @@ namespace A10vThunderTestConsole
             }
             else
             {
-                fileContent = File.ReadAllText($"A10SslManagement.json")
+                fileContent = File.ReadAllText($"A10MgmtManagement.json")
                 .Replace("UserNameGoesHere", UserName)
                 .Replace("PasswordGoesHere", Password)
                 .Replace("PartitionNameGoesHere", StorePath)
@@ -209,8 +243,8 @@ namespace A10vThunderTestConsole
                 .Replace("ScpPathGoesHere", StorePath)
                 .Replace("ScpServerGoesHere", ScpServer)
                 .Replace("ScpPortGoesHere", ScpPort)
-                .Replace("ScpUserNameGoesHere", ScpUserName)
-                .Replace("ScpPasswordGoesHere", ScpPassword)
+                .Replace("ScpUserGoesHere", ScpUserName)
+                .Replace("ScpPwdGoesHere", ScpPassword)
                 .Replace("CertificateContentGoesHere", CertificateContent);
             }
 
@@ -224,7 +258,7 @@ namespace A10vThunderTestConsole
 
             if (storeType.ToLower() == "ssl")
             {
-                fileContent = File.ReadAllText($"A10{storeType}Management.json")
+                fileContent = File.ReadAllText($"A10SsllManagementRemove.json")
                  .Replace("UserNameGoesHere", UserName)
                  .Replace("PasswordGoesHere", Password)
                  .Replace("PartitionNameGoesHere", StorePath)
@@ -233,7 +267,7 @@ namespace A10vThunderTestConsole
             }
             else
             {
-                fileContent = File.ReadAllText($"A10{storeType}Management.json")
+                fileContent = File.ReadAllText($"A10MgmtManagementRemove.json")
                  .Replace("UserNameGoesHere", UserName)
                  .Replace("PasswordGoesHere", Password)
                  .Replace("PartitionNameGoesHere", StorePath)
@@ -241,8 +275,8 @@ namespace A10vThunderTestConsole
                  .Replace("ScpPathGoesHere", StorePath)
                  .Replace("ScpServerGoesHere", ScpServer)
                  .Replace("ScpPortGoesHere", ScpPort)
-                 .Replace("ScpUserNameGoesHere", ScpUserName)
-                 .Replace("ScpPasswordGoesHere", ScpPassword)
+                 .Replace("ScpUserGoesHere", ScpUserName)
+                 .Replace("ScpPwdGoesHere", ScpPassword)
                  .Replace("ClientMachineGoesHere", ClientMachine);
             }
 

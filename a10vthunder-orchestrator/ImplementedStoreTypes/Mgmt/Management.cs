@@ -11,35 +11,43 @@ using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto;
 using Renci.SshNet;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
+using Renci.SshNet.Common;
+using System.Net.Sockets;
+using a10vthunder_orchestrator.Api;
 
-namespace linux_scp_orchestrator.ImplementedStoreTypes
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
 {
     public class Management : IManagementJobExtension
     {
-        private readonly ILogger<Management> _logger;
-        public string ExtensionName => "ThunderMgmt";
+        private ILogger _logger;
 
-        public Management(ILogger<Management> logger)
+        private readonly IPAMSecretResolver _resolver;
+
+        public Management(IPAMSecretResolver resolver)
         {
-            _logger = logger;
+            _resolver = resolver;
         }
+
+        public string ExtensionName => "ThunderMgmt";
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
+            _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
 
             try
             {
                 dynamic props = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
 
-                string host = props.host;
-                string username = props.username;
-                string password = props.password;
-                string path = props.path;
+                string host = props.ScpServer;
+                string username = props.ScpUserName;
+                string password = props.ScpPassword;
+                string path = config.CertificateStoreDetails.StorePath;
                 string filename = config.JobCertificate.Alias;
-                int port = props.port != null ? (int)props.port : 22;
+                int port = props.ScpPort != null ? (int)props.ScpPort : 22;
 
-                string fullPath = $"{path}/{filename}";
+                string fullPath = $"{path}/{filename}.pem";
 
                 switch (config.OperationType)
                 {
@@ -49,11 +57,13 @@ namespace linux_scp_orchestrator.ImplementedStoreTypes
                             return Fail(config, "File already exists. Use Overwrite flag to replace it.");
                         }
 
-                        ReplacePemFile(config, host, port, username, password, fullPath);
+                        ReplacePemFiles(config, host, port, username, password, fullPath);
+                        ReplaceCertAndKeyOnA10(config, props, fullPath);
+
                         break;
 
                     case CertStoreOperationType.Remove:
-                        RemovePemFile(config, host, port, username, password, fullPath);
+                        RemovePemFiles(config, host, port, username, password, fullPath);
                         break;
 
                     default:
@@ -69,38 +79,162 @@ namespace linux_scp_orchestrator.ImplementedStoreTypes
             }
         }
 
-        private void ReplacePemFile(ManagementJobConfiguration config, string host, int port, string user, string pass, string fullPath)
+        private void ReplaceCertAndKeyOnA10(ManagementJobConfiguration config, dynamic props, string fullPath)
         {
-            _logger.LogInformation($"Uploading PEM to {host}:{fullPath}");
-
-            var pemData = GetPemFileContents(config);
-
-            using (var client = new ScpClient(host, port, user, pass))
+            try
             {
-                client.Connect();
-                using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(pemData)))
-                {
-                    client.Upload(ms, fullPath);
-                }
-                client.Disconnect();
-            }
+                _logger.MethodEntry();
+                _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
+                dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+                _logger.LogTrace($"properties: {JsonConvert.SerializeObject(properties)}");
+                var Protocol = properties?.protocol == null || string.IsNullOrEmpty(properties.protocol.Value)
+                    ? "https"
+                    : properties.protocol.Value;
+                var AllowInvalidCert =
+                    properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
+                        ? false
+                        : bool.Parse(properties.allowInvalidCert.Value);
 
-            _logger.LogInformation("Upload completed.");
+                _logger.LogInformation("Calling A10 API to replace cert and key...");
+
+                int lastSlash = fullPath.LastIndexOf('/');
+                string basePath = fullPath.Substring(0, lastSlash);
+                string fileOnly = Path.GetFileNameWithoutExtension(fullPath);
+
+                string certPath = $"{basePath}/{fileOnly}.crt";
+                string keyPath = $"{basePath}/{fileOnly}.key";
+
+                string certUrl = $"scp://{config.ServerUsername}:{config.ServerPassword}@{properties?.ScpServer}:{certPath}";
+                string keyUrl = $"scp://{config.ServerUsername}:{config.ServerPassword}@{properties?.ScpServer}:{keyPath}";
+
+                using (var apiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+                $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
+                {
+                    apiClient.Logon();
+                    apiClient.ReplaceCertificateAndKey(certUrl, keyUrl);
+                    apiClient.WriteMemory();
+                    apiClient.LogOff();
+                }
+
+                _logger.LogInformation("A10 certificate and key replacement successful.");
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException($"SCP succeeded but A10 API update failed: {LogHandler.FlattenException(ex)}");
+            }
         }
 
-        private void RemovePemFile(ManagementJobConfiguration config, string host, int port, string user, string pass, string fullPath)
+
+        private void ReplacePemFiles(ManagementJobConfiguration config, string host, int port, string user, string pass, string fullPath)
         {
-            _logger.LogInformation($"Removing PEM from {host}:{fullPath}");
+            _logger.LogInformation($"Uploading certificate and key to {host}");
+
+            try
+            {
+                var (certPem, keyPem) = GetCertificateAndKey(config);
+
+                int lastSlash = fullPath.LastIndexOf('/');
+                string basePath = fullPath.Substring(0, lastSlash);
+                string filename = Path.GetFileNameWithoutExtension(fullPath);
+
+                string certPath = $"{basePath}/{filename}.crt";
+                string keyPath = $"{basePath}/{filename}.key";
+
+                // Check if files already exist when Overwrite is false
+                if (!config.Overwrite)
+                {
+                    if (RemoteFileExists(host, port, user, pass, certPath) || RemoteFileExists(host, port, user, pass, keyPath))
+                    {
+                        throw new InvalidOperationException("Certificate or key file already exists. Use Overwrite flag to replace them.");
+                    }
+                }
+
+                var connectionInfo = new PasswordConnectionInfo(host, port, user, pass)
+                {
+                    Timeout = TimeSpan.FromSeconds(10)
+                };
+
+                connectionInfo.AuthenticationBanner += (sender, args) =>
+                {
+                    _logger.LogInformation("SSH Banner: " + args.BannerMessage);
+                };
+
+                using (var client = new ScpClient(connectionInfo))
+                {
+                    _logger.LogInformation("Connecting to SCP client...");
+                    client.Connect();
+
+                    if (!client.IsConnected)
+                    {
+                        _logger.LogError("Failed to connect to the SCP server.");
+                        return;
+                    }
+
+                    using (var certStream = new MemoryStream(Encoding.UTF8.GetBytes(certPem)))
+                    using (var keyStream = new MemoryStream(Encoding.UTF8.GetBytes(keyPem)))
+                    {
+                        _logger.LogInformation($"Uploading certificate to {certPath}...");
+                        client.Upload(certStream, certPath);
+
+                        _logger.LogInformation($"Uploading private key to {keyPath}...");
+                        client.Upload(keyStream, keyPath);
+                    }
+
+                    client.Disconnect();
+                    _logger.LogInformation("Upload completed and disconnected.");
+                }
+            }
+            catch (InvalidOperationException invEx)
+            {
+                _logger.LogError(invEx.Message);
+                throw; // Let ProcessJob catch and turn into a JobResult.Failure
+            }
+            catch (SshAuthenticationException authEx)
+            {
+                _logger.LogError($"Authentication failed: {authEx.Message}");
+            }
+            catch (SshConnectionException connEx)
+            {
+                _logger.LogError($"SSH connection error: {connEx.Message}");
+            }
+            catch (SocketException sockEx)
+            {
+                _logger.LogError($"Socket error: {sockEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Unexpected error during upload: {ex.Message}");
+            }
+        }
+
+
+        private void RemovePemFiles(ManagementJobConfiguration config, string host, int port, string user, string pass, string fullPath)
+        {
+            _logger.LogInformation($"Removing certificate and key from {host}");
+
+            int lastSlash = fullPath.LastIndexOf('/');
+            string basePath = fullPath.Substring(0, lastSlash);
+            string filename = Path.GetFileNameWithoutExtension(fullPath);
+
+            string certPath = $"{basePath}/{filename}.crt";
+            string keyPath = $"{basePath}/{filename}.key";
 
             using (var ssh = new SshClient(host, port, user, pass))
             {
                 ssh.Connect();
-                ssh.RunCommand($"rm -f \"{fullPath}\"");
+
+                _logger.LogInformation($"Removing cert: {certPath}");
+                ssh.RunCommand($"rm -f \"{certPath}\"");
+
+                _logger.LogInformation($"Removing key: {keyPath}");
+                ssh.RunCommand($"rm -f \"{keyPath}\"");
+
                 ssh.Disconnect();
             }
 
-            _logger.LogInformation("File removed.");
+            _logger.LogInformation("Certificate and key removed.");
         }
+
 
         private bool RemoteFileExists(string host, int port, string user, string pass, string fullPath)
         {
@@ -113,7 +247,7 @@ namespace linux_scp_orchestrator.ImplementedStoreTypes
             }
         }
 
-        private string GetPemFileContents(ManagementJobConfiguration config)
+        private (string certPem, string keyPem) GetCertificateAndKey(ManagementJobConfiguration config)
         {
             if (!string.IsNullOrEmpty(config.JobCertificate.PrivateKeyPassword))
             {
@@ -124,27 +258,30 @@ namespace linux_scp_orchestrator.ImplementedStoreTypes
                 var cert = store.GetCertificate(alias).Certificate;
                 var key = store.GetKey(alias).Key;
 
-                StringBuilder pemBuilder = new StringBuilder();
+                string certPem, keyPem;
 
                 using (var certWriter = new StringWriter())
                 {
                     new PemWriter(certWriter).WriteObject(cert);
-                    pemBuilder.Append(certWriter.ToString());
+                    certPem = certWriter.ToString();
                 }
 
                 using (var keyWriter = new StringWriter())
                 {
                     new PemWriter(keyWriter).WriteObject(key);
-                    pemBuilder.Append(keyWriter.ToString());
+                    keyPem = keyWriter.ToString();
                 }
 
-                return pemBuilder.ToString();
+                return (certPem, keyPem);
             }
             else
             {
-                return $"-----BEGIN CERTIFICATE-----\n{Pemify(config.JobCertificate.Contents)}\n-----END CERTIFICATE-----";
+                string certPem = $"-----BEGIN CERTIFICATE-----\n{Pemify(config.JobCertificate.Contents)}\n-----END CERTIFICATE-----";
+                string keyPem = ""; // No key provided
+                return (certPem, keyPem);
             }
         }
+
 
         private string Pemify(string base64)
         {

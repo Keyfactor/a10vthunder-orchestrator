@@ -5,19 +5,22 @@ using System.Text.RegularExpressions;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Renci.SshNet;
 
-namespace linux_scp_orchestrator.ImplementedStoreTypes
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
 {
     public class Inventory : IInventoryJobExtension
     {
-        private readonly ILogger<Inventory> _logger;
+        private ILogger _logger;
 
-        public Inventory(ILogger<Inventory> logger)
+        private readonly IPAMSecretResolver _resolver;
+
+        public Inventory(IPAMSecretResolver resolver)
         {
-            _logger = logger;
+            _resolver = resolver;
         }
 
         public string ExtensionName => "ThunderMgmt";

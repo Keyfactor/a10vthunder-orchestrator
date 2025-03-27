@@ -2,7 +2,7 @@
 
 namespace a10vthunder_orchestrator.Api.Models
 {
-    public class Certificate
+    public class ManagementCertificate
     {
         public int load { get; set; }
 
@@ -12,6 +12,6 @@ namespace a10vthunder_orchestrator.Api.Models
 
     public class ManagementCertRequest
     {
-        public Certificate certificate { get; set; }
+        public ManagementCertificate certificate { get; set; }
     }
 }
