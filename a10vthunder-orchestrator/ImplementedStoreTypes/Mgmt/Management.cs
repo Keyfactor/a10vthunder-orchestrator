@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Crypto;
 using Renci.SshNet;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Renci.SshNet.Common;
@@ -40,7 +39,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
             {
                 dynamic props = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
 
-                string host = props.ScpServer;
+                string host = props.OrchToScpServerIp;
                 string username = props.ScpUserName;
                 string password = props.ScpPassword;
                 string path = config.CertificateStoreDetails.StorePath;
@@ -104,8 +103,8 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
                 string certPath = $"{basePath}/{fileOnly}.crt";
                 string keyPath = $"{basePath}/{fileOnly}.key";
 
-                string certUrl = $"scp://{config.ServerUsername}:{config.ServerPassword}@{properties?.ScpServer}:{certPath}";
-                string keyUrl = $"scp://{config.ServerUsername}:{config.ServerPassword}@{properties?.ScpServer}:{keyPath}";
+                string certUrl = $"scp://{properties?.ScpUserName}:{properties?.ScpPassword}@{properties?.A10ToScpServerIp}:{certPath}";
+                string keyUrl = $"scp://{properties?.ScpUserName}:{properties?.ScpPassword}@{properties?.A10ToScpServerIp}:{keyPath}";
 
                 using (var apiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))

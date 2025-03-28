@@ -25,7 +25,8 @@ namespace A10vThunderTestConsole
         public static string Overwrite { get; set; }
         public static string ManagementType { get; set; }
         public static string CertificateContent { get; set; }
-        public static string ScpServer { get; set; }
+        public static string OrchToScpServerIp { get; set; }
+        public static string A10ToScpServerIp { get; set; }
         public static string ScpPort { get; set; }
         public static string ScpUserName { get; set; }
         public static string ScpPassword { get; set; }
@@ -44,7 +45,8 @@ namespace A10vThunderTestConsole
             StoreType = GetValue(arguments, "-storetype", "Enter Store Type");
             if (StoreType.ToLower() == "mgmt")
             {
-                ScpServer = GetValue(arguments, "-scpserver", "Enter Scp Server");
+                OrchToScpServerIp = GetValue(arguments, "-orchtoscpserverip", "Enter Orch To Scp Server Ip");
+                A10ToScpServerIp = GetValue(arguments, "-a10toscpserverip", "Enter A10 to Scp Server Ip");
                 ScpPort = GetValue(arguments, "-scpport", "Enter Scp Port");
                 ScpUserName = GetValue(arguments, "-scpusername", "Enter Scp User Name");
                 ScpPassword = GetValue(arguments, "-scppassword", "Enter Scp Password");
@@ -204,7 +206,8 @@ namespace A10vThunderTestConsole
                 .Replace("PasswordGoesHere", Password)
                 .Replace("ClientMachineGoesHere", ClientMachine)
                 .Replace("ScpPathGoesHere", StorePath)
-                .Replace("ScpServerGoesHere",ScpServer)
+                .Replace("OrchToScpServerIpGoesHere", OrchToScpServerIp)
+                .Replace("A10ToScpServerIpGoesHere", A10ToScpServerIp)
                 .Replace("ScpPortGoesHere",ScpPort)
                 .Replace("ScpUserGoesHere", ScpUserName)
                 .Replace("ScpPwdGoesHere",ScpPassword);
@@ -241,7 +244,8 @@ namespace A10vThunderTestConsole
                 .Replace("ClientMachineGoesHere", ClientMachine)
                 .Replace("\"Overwrite\": false", $"\"Overwrite\": {overwriteValue}")
                 .Replace("ScpPathGoesHere", StorePath)
-                .Replace("ScpServerGoesHere", ScpServer)
+                .Replace("OrchToScpServerIpGoesHere", OrchToScpServerIp)
+                .Replace("A10ToScpServerIpGoesHere", A10ToScpServerIp)
                 .Replace("ScpPortGoesHere", ScpPort)
                 .Replace("ScpUserGoesHere", ScpUserName)
                 .Replace("ScpPwdGoesHere", ScpPassword)
@@ -273,7 +277,8 @@ namespace A10vThunderTestConsole
                  .Replace("PartitionNameGoesHere", StorePath)
                  .Replace("AliasGoesHere", CertAlias)
                  .Replace("ScpPathGoesHere", StorePath)
-                 .Replace("ScpServerGoesHere", ScpServer)
+                 .Replace("OrchToScpServerIpGoesHere", OrchToScpServerIp)
+                 .Replace("A10ToScpServerIpGoesHere", A10ToScpServerIp)
                  .Replace("ScpPortGoesHere", ScpPort)
                  .Replace("ScpUserGoesHere", ScpUserName)
                  .Replace("ScpPwdGoesHere", ScpPassword)

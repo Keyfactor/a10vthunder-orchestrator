@@ -372,7 +372,7 @@ namespace a10vthunder_orchestrator.Api
                 };
 
                 Logger.LogInformation($"Uploading certificate from {certUrl}");
-                ApiRequestString("POST", "/axapi/v3/pki/certificate", "POST", JsonConvert.SerializeObject(certRequest), false, true);
+                ApiRequestString("POST", "/axapi/v3/web-service/secure/certificate", "POST", JsonConvert.SerializeObject(certRequest), false, true);
 
                 // 2. Upload private key
                 var keyRequest = new ManagementPrivateKeyRequest
@@ -385,7 +385,7 @@ namespace a10vthunder_orchestrator.Api
                 };
 
                 Logger.LogInformation($"Uploading private key from {keyUrl}");
-                ApiRequestString("POST", "/axapi/v3/pki/private-key", "POST", JsonConvert.SerializeObject(keyRequest), false, true);
+                ApiRequestString("POST", "/axapi/v3/web-service/secure/private-key", "POST", JsonConvert.SerializeObject(keyRequest), false, true);
 
                 // 3. Restart secure system
                 var restartRequest = new ManagementCertRestartRequest
@@ -397,7 +397,7 @@ namespace a10vthunder_orchestrator.Api
                 };
 
                 Logger.LogInformation("Restarting secure system to apply certificate and key.");
-                ApiRequestString("POST", "/axapi/v3/system/secure", "POST", JsonConvert.SerializeObject(restartRequest), false, true);
+                ApiRequestString("POST", "/axapi/v3/web-service/secure", "POST", JsonConvert.SerializeObject(restartRequest), false, true);
 
                 Logger.LogInformation("Certificate and key replaced and secure system restarted.");
             }

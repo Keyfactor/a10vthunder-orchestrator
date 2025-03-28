@@ -4,7 +4,7 @@
     "ClientMachine": "ClientMachineGoesHere",
     "StorePath": "ScpPathGoesHere",
     "StorePassword": null,
-    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\",\"ServerUseSsl\":\"true\",\"ScpServer\":\"ScpServerGoesHere\",\"ScpPort\":\"ScpPortGoesHere\",\"ScpUserName\":\"ScpUserGoesHere\",\"ScpPassword\":\"ScpPwdGoesHere\"}",
+    "Properties": "{\"ServerUsername\":\"UserNameGoesHere\",\"ServerPassword\":\"PasswordGoesHere\",\"ServerUseSsl\":\"true\",\"ServerUseSsl\":\"true\",\"OrchToScpServerIp\":\"OrchToScpServerIpGoesHere\",\"ScpPort\":\"ScpPortGoesHere\",\"ScpUserName\":\"ScpUserGoesHere\",\"ScpPassword\":\"ScpPwdGoesHere\",\"A10ToScpServerIp\":\"A10ToScpServerIpGoesHere\",\"allowInvalidCert\":\"true\"}",
     "Type": 106
   },
   "OperationType": 3,
