@@ -14,7 +14,7 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl
 {
     public class Management : IManagementJobExtension
     {

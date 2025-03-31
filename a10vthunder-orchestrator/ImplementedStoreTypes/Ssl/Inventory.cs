@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
+namespace a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl
 {
     public class Inventory : IInventoryJobExtension
     {

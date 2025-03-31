@@ -109,12 +109,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Inventory(secretResolver);
+                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl.Inventory(secretResolver);
                 result = inv.ProcessJob(config, GetItems);
             }
             else
             {
-                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Inventory(secretResolver);
+                var inv = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt.Inventory(secretResolver);
                 result = inv.ProcessJob(config, GetItems);
             }
 
@@ -140,12 +140,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             else
             {
-                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Management(secretResolver);
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -164,12 +164,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Ssl.Management(secretResolver);
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             else
             {
-                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt.Management(secretResolver);
+                var mgmt = new a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             Thread.Sleep(5000);
