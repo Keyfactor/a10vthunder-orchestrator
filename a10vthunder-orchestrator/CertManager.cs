@@ -71,7 +71,7 @@ namespace a10vthunder_orchestrator
 
                 if (CertificateCollection != null)
                     foreach (var cc in CertificateCollection.SslCertificate.Oper.SslCertificates)
-                        if (!string.IsNullOrEmpty(cc.Name))
+                        if (!string.IsNullOrEmpty(cc.Name) && cc.Type.ToLower()!="key")
                         {
                             logger.LogTrace($"Looping through Certificate Store files: {cc.Name}");
 
