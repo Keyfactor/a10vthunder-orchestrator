@@ -32,7 +32,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
-            _logger = LogHandler.GetClassLogger<Inventory>();
+            _logger = LogHandler.GetClassLogger<Management>();
             _logger.MethodEntry();
 
             try

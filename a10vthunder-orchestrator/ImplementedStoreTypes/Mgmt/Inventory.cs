@@ -27,51 +27,85 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
+            _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
 
             try
             {
                 dynamic props = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
 
-                string host = props.host;
-                string username = props.username;
-                string password = props.password;
-                string path = props.path;
+                string host = props.OrchToScpServerIp;
+                string username = props.ScpUserName;
+                string password = props.ScpPassword;
+                string path = config.CertificateStoreDetails.StorePath;
                 int port = props.port != null ? (int)props.port : 22;
 
-                _logger.LogInformation($"Connecting to {host} via SCP to retrieve PEM from {path}");
+                _logger.LogInformation($"Connecting to {host} via SSH to list files in {path}");
 
-                string pemContent;
+                List<CurrentInventoryItem> inventory = new List<CurrentInventoryItem>();
 
-                using (var client = new ScpClient(host, port, username, password))
+                using (var sshClient = new SshClient(host, port, username, password))
+                using (var scpClient = new ScpClient(host, port, username, password))
                 {
-                    client.Connect();
-                    using (var ms = new MemoryStream())
+                    sshClient.Connect();
+                    scpClient.Connect();
+
+                    // List all files in directory
+                    var cmd = sshClient.RunCommand($"ls -1 \"{path}\"");
+                    if (cmd.ExitStatus != 0)
                     {
-                        client.Download(path, ms);
-                        pemContent = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                        throw new Exception($"Failed to list directory: {cmd.Error}");
                     }
-                    client.Disconnect();
+
+                    var files = cmd.Result.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (var file in files)
+                    {
+                        string fullFilePath = $"{path}/{file}";
+                        _logger.LogInformation($"Checking file: {fullFilePath}");
+
+                        using (var ms = new MemoryStream())
+                        {
+                            try
+                            {
+                                scpClient.Download(fullFilePath, ms);
+                                string pemContent = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+
+                                string cert = ExtractPemBlock(pemContent, "CERTIFICATE");
+
+                                if (!string.IsNullOrEmpty(cert))
+                                {
+                                    string alias = Path.GetFileNameWithoutExtension(file);
+
+                                    var inventoryItem = new CurrentInventoryItem
+                                    {
+                                        ItemStatus = OrchestratorInventoryItemStatus.Unknown,
+                                        Alias = alias,
+                                        PrivateKeyEntry = true,
+                                        UseChainLevel = false,
+                                        Certificates = new[] { cert }
+                                    };
+
+                                    inventory.Add(inventoryItem);
+                                    _logger.LogInformation($"Added cert to inventory: {alias}");
+                                }
+                                else
+                                {
+                                    _logger.LogDebug($"Skipped file (no certificate found): {file}");
+                                }
+                            }
+                            catch (Exception fileEx)
+                            {
+                                _logger.LogWarning($"Failed to process file '{file}': {fileEx.Message}");
+                            }
+                        }
+                    }
+
+                    sshClient.Disconnect();
+                    scpClient.Disconnect();
                 }
 
-                string cert = ExtractPemBlock(pemContent, "CERTIFICATE");
-                string key = ExtractPemBlock(pemContent, "PRIVATE KEY");
-
-                if (string.IsNullOrEmpty(cert) || string.IsNullOrEmpty(key))
-                {
-                    throw new Exception("Failed to extract certificate or key from PEM.");
-                }
-
-                var inventoryItem = new CurrentInventoryItem
-                {
-                    ItemStatus = OrchestratorInventoryItemStatus.Unknown,
-                    Alias = Path.GetFileName(path),
-                    PrivateKeyEntry = true,
-                    UseChainLevel = false,
-                    Certificates = new[] { cert }
-                };
-
-                bool result = submitInventory.Invoke(new List<CurrentInventoryItem> { inventoryItem });
+                bool result = submitInventory.Invoke(inventory);
 
                 return new JobResult
                 {
@@ -95,6 +129,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
                 _logger.MethodExit();
             }
         }
+
 
         private string ExtractPemBlock(string pem, string blockType)
         {
