@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace a10vthunder_orchestrator.Exceptions
+namespace a10vthunder.Exceptions
 {
     internal class InvalidInventoryInvokeException : Exception
     {

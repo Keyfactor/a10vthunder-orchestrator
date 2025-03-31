@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace a10vthunder_orchestrator
+namespace a10vthunder
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class JobAttribute : Attribute

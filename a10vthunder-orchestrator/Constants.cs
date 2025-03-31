@@ -1,4 +1,4 @@
-﻿namespace a10vthunder_orchestrator
+﻿namespace a10vthunder
 {
     static class WindowsUserAnyAgentConstants
     {
