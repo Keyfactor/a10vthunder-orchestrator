@@ -29,6 +29,15 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
         }
 
         public string ExtensionName => "ThunderMgmt";
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
+
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
+
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
@@ -83,6 +92,10 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
             try
             {
                 _logger.MethodEntry();
+                
+                ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+                ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
                 _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
                 dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
                 _logger.LogTrace($"properties: {JsonConvert.SerializeObject(properties)}");
@@ -106,7 +119,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Mgmt
                 string certUrl = $"scp://{properties?.ScpUserName}:{properties?.ScpPassword}@{properties?.A10ToScpServerIp}:{certPath}";
                 string keyUrl = $"scp://{properties?.ScpUserName}:{properties?.ScpPassword}@{properties?.A10ToScpServerIp}:{keyPath}";
 
-                using (var apiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+                using (var apiClient = new ApiClient(ServerUserName, ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
                 {
                     apiClient.Logon();

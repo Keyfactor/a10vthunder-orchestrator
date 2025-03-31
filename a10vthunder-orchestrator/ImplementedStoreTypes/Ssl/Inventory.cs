@@ -28,12 +28,22 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
         protected internal virtual string Protocol { get; set; }
         protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
         public string ExtensionName => "ThunderSsl";
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
             _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
+            
+            ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+            ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
 
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
             Protocol = properties != null &&
@@ -45,7 +55,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
                     ? false
                     : bool.Parse(properties.allowInvalidCert.Value);
 
-            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+            using (ApiClient = new ApiClient(ServerUserName, ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 ApiClient.Logon();

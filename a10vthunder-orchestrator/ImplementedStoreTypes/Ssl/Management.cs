@@ -39,12 +39,23 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
         protected internal virtual string CertStart { get; set; } = "-----BEGIN CERTIFICATE-----\n";
         protected internal virtual string CertEnd { get; set; } = "\n-----END CERTIFICATE-----";
         protected internal virtual string Alias { get; set; }
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
         public string ExtensionName => "ThunderSsl";
+
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
             _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
+            ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+            ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
             _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
             _logger.LogTrace($"properties: {JsonConvert.SerializeObject(properties)}");
@@ -59,7 +70,7 @@ namespace a10vthunder_orchestrator.ImplementedStoreTypes.Ssl
             CertManager = new CertManager();
             _logger.LogTrace($"Ending Management Constructor Protocol is {Protocol}");
 
-            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+            using (ApiClient = new ApiClient(ServerUserName, ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 _logger.LogTrace("Entering APIClient Using clause");
