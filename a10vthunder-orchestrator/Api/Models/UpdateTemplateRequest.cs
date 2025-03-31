@@ -1,4 +1,4 @@
-﻿namespace a10vthunder_orchestrator.Api.Models
+﻿namespace a10vthunder.Api.Models
 {
     public class UpdateTemplateCertificate
     {

@@ -2,8 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using a10vthunder_orchestrator.Api;
-using a10vthunder_orchestrator.Api.Models;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -14,7 +14,7 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl
+namespace a10vthunder.ImplementedStoreTypes.ThunderSsl
 {
     public class Management : IManagementJobExtension
     {

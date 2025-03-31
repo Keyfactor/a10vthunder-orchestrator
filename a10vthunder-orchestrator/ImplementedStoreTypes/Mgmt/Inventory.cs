@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Renci.SshNet;
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt
+namespace a10vthunder.ImplementedStoreTypes.ThunderMgmt
 {
     public class Inventory : IInventoryJobExtension
     {

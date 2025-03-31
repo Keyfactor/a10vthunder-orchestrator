@@ -1,6 +1,6 @@
 ﻿using System;
-using a10vthunder_orchestrator.Api;
-using a10vthunder_orchestrator.Api.Models;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 
-namespace a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl
+namespace a10vthunder.ImplementedStoreTypes.ThunderSsl
 {
     public class Inventory : IInventoryJobExtension
     {

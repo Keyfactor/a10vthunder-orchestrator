@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using a10vthunder_orchestrator.Api.Models;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace a10vthunder_orchestrator.Api
+namespace a10vthunder.Api
 {
     public sealed class ApiClient : IDisposable
     {
