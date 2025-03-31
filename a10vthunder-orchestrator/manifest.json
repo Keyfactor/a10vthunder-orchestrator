@@ -1,13 +1,21 @@
 ﻿{
   "extensions": {
     "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
-      "CertStores.vThunderU.Inventory": {
+      "CertStores.ThunderMgmt.Inventory": {
         "assemblypath": "a10vthunder-orchestrator.dll",
-        "TypeFullName": "a10vthunder_orchestrator.Jobs.Inventory"
+        "TypeFullName": "a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt"
       },
-      "CertStores.vThunderU.Management": {
+      "CertStores.ThunderMgmt.Management": {
         "assemblypath": "a10vthunder-orchestrator.dll",
-        "TypeFullName": "a10vthunder_orchestrator.Jobs.Management"
+        "TypeFullName": "a10vthunder_orchestrator.ImplementedStoreTypes.ThunderMgmt"
+      },
+      "CertStores.ThunderSsl.Inventory": {
+        "assemblypath": "a10vthunder-orchestrator.dll",
+        "TypeFullName": "a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl"
+      },
+      "CertStores.ThunderSsl.Management": {
+        "assemblypath": "a10vthunder-orchestrator.dll",
+        "TypeFullName": "a10vthunder_orchestrator.ImplementedStoreTypes.ThunderSsl"
       }
     }
   }
