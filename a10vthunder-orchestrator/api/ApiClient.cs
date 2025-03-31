@@ -106,6 +106,43 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public void SetPartition(SetPartitionRequest sslSetPartitionRequest)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"Set Partition Request: {JsonConvert.SerializeObject(sslSetPartitionRequest)}");
+                ApiRequestString("POST", "/axapi/v3/active-partition", "POST", JsonConvert.SerializeObject(sslSetPartitionRequest),
+                    false, true);
+                Logger.LogTrace("Set Partition Complete...");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.AddCertificate(SslCertificateRequest sslCertRequest, string importCertificate): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public void WriteMemory()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                ApiRequestString("POST", "/axapi/v3/write/memory", "POST", "",
+                    false, true);
+                Logger.LogTrace("WriteMemory Complete...");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In ApiClient.WriteMemory: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
         public void AddCertificate(SslCertificateRequest sslCertRequest, byte[] certData)
         {
             try
@@ -221,6 +258,84 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
+        public ServerTemplateListResponse GetServerTemplates()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", $"/axapi/v3/slb/template/server-ssl-list", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<ServerTemplateListResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetServerTemplates(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public ClientTemplateListResponse GetClientTemplates()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", $"/axapi/v3/slb/template/client-ssl-list", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<ClientTemplateListResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetClientTemplates(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request,string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
+                    false, true); 
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateClientTemplateResponse UpdateClientTemplates(UpdateTemplateRequest request, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
+                    false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateClientTemplateResponse>(strResponse);
+                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
         public string GetCertificate(string certificateName)
         {
             try
@@ -239,6 +354,62 @@ namespace a10vthunder_orchestrator.Api
                 throw;
             }
         }
+
+        public void ReplaceCertificateAndKey(string certUrl, string keyUrl)
+        {
+            Logger.MethodEntry();
+
+            try
+            {
+                // 1. Upload certificate
+                var certRequest = new ManagementCertRequest
+                {
+                    certificate = new ManagementCertificate
+                    {
+                        load = 1,
+                        fileurl = certUrl
+                    }
+                };
+
+                Logger.LogInformation($"Uploading certificate from {certUrl}");
+                ApiRequestString("POST", "/axapi/v3/web-service/secure/certificate", "POST", JsonConvert.SerializeObject(certRequest), false, true);
+
+                // 2. Upload private key
+                var keyRequest = new ManagementPrivateKeyRequest
+                {
+                    privatekey = new PrivateKey
+                    {
+                        load = 1,
+                        fileurl = keyUrl
+                    }
+                };
+
+                Logger.LogInformation($"Uploading private key from {keyUrl}");
+                ApiRequestString("POST", "/axapi/v3/web-service/secure/private-key", "POST", JsonConvert.SerializeObject(keyRequest), false, true);
+
+                // 3. Restart secure system
+                var restartRequest = new ManagementCertRestartRequest
+                {
+                    secure = new Secure
+                    {
+                        restart = 1
+                    }
+                };
+
+                Logger.LogInformation("Restarting secure system to apply certificate and key.");
+                ApiRequestString("POST", "/axapi/v3/web-service/secure", "POST", JsonConvert.SerializeObject(restartRequest), false, true);
+
+                Logger.LogInformation("Certificate and key replaced and secure system restarted.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error replacing certificate and key: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+
+            Logger.MethodExit();
+        }
+
 
         public void RemoveCertificate(DeleteCertBaseRequest deleteCertRoot)
         {
@@ -291,53 +462,59 @@ namespace a10vthunder_orchestrator.Api
             }
         }
 
-        public string ApiRequestString(string strCall, string strPostUrl, string strMethod,
-            string strQueryString,
-            bool bWrite, bool bUseToken)
+        public string ApiRequestString(string strCall, string strPostUrl, string strMethod, string strQueryString, bool bWrite, bool bUseToken)
         {
             try
             {
                 Logger.MethodEntry();
                 var objRequest = CreateRequest(BaseUrl, strPostUrl);
-                Logger.LogTrace(
-                    $"Request Object Created... method will be {strMethod} postURL will be {strPostUrl} query string will be {strQueryString}");
                 objRequest.Method = strMethod;
                 objRequest.ContentType = "application/json";
-                Logger.LogTrace($"Use Token {bUseToken}");
-                Logger.LogTrace($"AuthenticationSignature {AuthenticationSignature}");
+
                 if (bUseToken)
                     objRequest.Headers.Add("Authorization", "A10 " + AuthenticationSignature);
 
-                if (!string.IsNullOrEmpty(strQueryString) && strMethod == "POST")
+                if (!string.IsNullOrEmpty(strQueryString) && (strMethod == "POST" || strMethod == "PUT"))
                 {
                     var postBytes = Encoding.UTF8.GetBytes(strQueryString);
-                    Logger.LogTrace($"postBytes.Length {postBytes.Length}");
                     objRequest.ContentLength = postBytes.Length;
-                    //This is for testing on an Azure VM with an invalid certificate
                     if (AllowInvalidCert)
                         ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                     using var requestStream = objRequest.GetRequestStream();
                     requestStream.Write(postBytes, 0, postBytes.Length);
-                    requestStream.Close();
                 }
 
-                Logger.LogTrace($"AllowInvalidCert {AllowInvalidCert}");
-                //This is for testing on an Azure VM with an invalid certificate
                 if (AllowInvalidCert)
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                var objResponse = GetResponse(objRequest);
-                Logger.LogTrace("Got Response");
-                using var strReader = new StreamReader(objResponse.GetResponseStream() ?? Stream.Null);
+
+                using var response = (HttpWebResponse)objRequest.GetResponse();
+
+                using var strReader = new StreamReader(response.GetResponseStream() ?? Stream.Null);
                 var strResponse = strReader.ReadToEnd();
+
+                // ✅ Check for non-2xx codes (shouldn’t happen here, but just in case)
+                if ((int)response.StatusCode < 200 || (int)response.StatusCode >= 300)
+                {
+                    HandleApiError(strResponse, (int)response.StatusCode);
+                }
+
                 Logger.MethodExit();
                 return strResponse;
             }
+            catch (WebException webEx) when (webEx.Response is HttpWebResponse errorResponse)
+            {
+                using var errorReader = new StreamReader(errorResponse.GetResponseStream() ?? Stream.Null);
+                var errorBody = errorReader.ReadToEnd();
+                HandleApiError(errorBody, (int)errorResponse.StatusCode);
+                throw;
+            }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In ApiRequestString: {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Unhandled Error In ApiRequestString: {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
+
 
         public HttpWebResponse MultipartFormDataPost(string postUrl, string userAgent,
             Dictionary<string, object> postParameters)
@@ -470,6 +647,26 @@ namespace a10vthunder_orchestrator.Api
             public byte[] File { get; set; }
             public string FileName { get; set; }
             public string ContentType { get; set; }
+        }
+
+        private void HandleApiError(string errorBody, int httpStatusCode)
+        {
+            try
+            {
+                var errorObj = JsonConvert.DeserializeObject<dynamic>(errorBody);
+                string message = errorObj?.response?.err?.msg ?? "Unknown error";
+                int code = errorObj?.response?.err?.code ?? 0;
+
+                var fullMessage = $"A10 API Error: HTTP {httpStatusCode} - {message} (Code: {code})";
+                Logger.LogError(fullMessage);
+
+                throw new ApplicationException(fullMessage);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to parse API error body: {errorBody}");
+                throw new ApplicationException($"HTTP {httpStatusCode} - Unexpected API error format", ex);
+            }
         }
 
         #endregion
