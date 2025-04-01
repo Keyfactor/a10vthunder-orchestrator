@@ -109,12 +109,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var inv = new a10vthunder.ImplementedStoreTypes.ThunderSsl.Inventory(secretResolver);
+                var inv = new Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs.Inventory(secretResolver);
                 result = inv.ProcessJob(config, GetItems);
             }
             else
             {
-                var inv = new a10vthunder.ImplementedStoreTypes.ThunderMgmt.Inventory(secretResolver);
+                var inv = new Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs.Inventory(secretResolver);
                 result = inv.ProcessJob(config, GetItems);
             }
 
@@ -140,12 +140,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var mgmt = new a10vthunder.ImplementedStoreTypes.ThunderSsl.Management(secretResolver);
+                var mgmt = new Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             else
             {
-                var mgmt = new a10vthunder.ImplementedStoreTypes.ThunderMgmt.Management(secretResolver);
+                var mgmt = new Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -164,12 +164,12 @@ namespace A10vThunderTestConsole
 
             if (StoreType.ToLower() == "ssl")
             {
-                var mgmt = new a10vthunder.ImplementedStoreTypes.ThunderSsl.Management(secretResolver);
+                var mgmt = new Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             else
             {
-                var mgmt = new a10vthunder.ImplementedStoreTypes.ThunderMgmt.Management(secretResolver);
+                var mgmt = new Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs.Management(secretResolver);
                 result = mgmt.ProcessJob(config);
             }
             Thread.Sleep(5000);

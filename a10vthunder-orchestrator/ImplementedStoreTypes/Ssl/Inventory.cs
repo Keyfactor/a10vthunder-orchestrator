@@ -1,4 +1,5 @@
 ﻿using System;
+using a10vthunder;
 using a10vthunder.Api;
 using a10vthunder.Api.Models;
 using Keyfactor.Logging;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 
-namespace a10vthunder.ImplementedStoreTypes.ThunderSsl
+namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
 {
     public class Inventory : IInventoryJobExtension
     {

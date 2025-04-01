@@ -15,7 +15,7 @@ using Renci.SshNet.Common;
 using System.Net.Sockets;
 using a10vthunder.Api;
 
-namespace a10vthunder.ImplementedStoreTypes.ThunderMgmt
+namespace Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs
 {
     public class Management : IManagementJobExtension
     {
