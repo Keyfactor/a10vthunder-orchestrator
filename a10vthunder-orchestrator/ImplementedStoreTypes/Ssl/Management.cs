@@ -272,34 +272,34 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
         private string GenerateNewAlias(string originalAlias)
         {
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            string newAlias;
 
-            // Match a Unix timestamp suffix pattern (e.g., _1234567890 at the end of the string)
-            var match = System.Text.RegularExpressions.Regex.Match(originalAlias, @"_(\d{10})$");
+            // Match the first Unix timestamp in the format _########## (10 digits)
+            var match = System.Text.RegularExpressions.Regex.Match(originalAlias, @"^(.*?)(_?\d{10}).*$");
+
+            string newAlias;
 
             if (match.Success)
             {
-                // Replace the matched timestamp with the current one
-                newAlias = originalAlias.Substring(0, match.Index) + "_" + timestamp;
+                // Keep everything before the first timestamp, append new timestamp
+                newAlias = $"{match.Groups[1].Value}_{timestamp}";
             }
             else
             {
+                // No timestamp found, just append new one
                 newAlias = $"{originalAlias}_{timestamp}";
             }
 
-            // Ensure the alias is no more than 240 characters
+            // Ensure it's within the 240 character limit
             if (newAlias.Length > 240)
             {
-                // Truncate the beginning to fit the length
                 int maxBaseLength = 240 - (timestamp.Length + 1); // +1 for underscore
-                string truncatedBase = originalAlias.Length > maxBaseLength
-                    ? originalAlias.Substring(0, maxBaseLength)
-                    : originalAlias;
-                newAlias = $"{truncatedBase}_{timestamp}";
+                string basePart = newAlias.Substring(0, maxBaseLength);
+                newAlias = $"{basePart}_{timestamp}";
             }
 
             return newAlias;
         }
+
 
 
         protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
