@@ -3,19 +3,19 @@
     "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
       "CertStores.ThunderMgmt.Inventory": {
         "assemblypath": "A10vThunder.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt"
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt.Inventory"
       },
       "CertStores.ThunderMgmt.Management": {
         "assemblypath": "A10vThunder.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt"
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt.Management"
       },
       "CertStores.ThunderSsl.Inventory": {
         "assemblypath": "A10vThunder.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl"
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl.Inventory"
       },
       "CertStores.ThunderSsl.Management": {
         "assemblypath": "A10vThunder.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl"
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl.Management"
       }
     }
   }
