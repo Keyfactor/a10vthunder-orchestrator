@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using a10vthunder_orchestrator.Api;
-using a10vthunder_orchestrator.Api.Models;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Microsoft.Extensions.Logging;
 
-namespace a10vthunder_orchestrator
+namespace a10vthunder
 {
     public class CertManager
     {
@@ -71,7 +71,7 @@ namespace a10vthunder_orchestrator
 
                 if (CertificateCollection != null)
                     foreach (var cc in CertificateCollection.SslCertificate.Oper.SslCertificates)
-                        if (!string.IsNullOrEmpty(cc.Name))
+                        if (!string.IsNullOrEmpty(cc.Name) && cc.Type.ToLower()!="key")
                         {
                             logger.LogTrace($"Looping through Certificate Store files: {cc.Name}");
 
