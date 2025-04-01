@@ -2,29 +2,33 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using a10vthunder_orchestrator.Api;
-using a10vthunder_orchestrator.Api.Models;
+using a10vthunder;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 
-namespace a10vthunder_orchestrator.Jobs
+namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
 {
     public class Management : IManagementJobExtension
     {
         protected internal static Func<string, string> Pemify = ss =>
             ss.Length <= 64 ? ss : ss.Substring(0, 64) + "\n" + Pemify(ss.Substring(64));
 
-        private readonly ILogger<Management> _logger;
+        private ILogger _logger;
 
-        public Management(ILogger<Management> logger)
+        private readonly IPAMSecretResolver _resolver;
+
+        public Management(IPAMSecretResolver resolver)
         {
-            _logger = logger;
+            _resolver = resolver;
         }
 
         protected internal virtual string Protocol { get; set; }
@@ -36,11 +40,23 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string CertStart { get; set; } = "-----BEGIN CERTIFICATE-----\n";
         protected internal virtual string CertEnd { get; set; } = "\n-----END CERTIFICATE-----";
         protected internal virtual string Alias { get; set; }
-        public string ExtensionName => "VThunderU";
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
+        public string ExtensionName => "ThunderSsl";
+
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
+            _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
+            ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+            ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
             _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
             _logger.LogTrace($"properties: {JsonConvert.SerializeObject(properties)}");
@@ -55,7 +71,7 @@ namespace a10vthunder_orchestrator.Jobs
             CertManager = new CertManager();
             _logger.LogTrace($"Ending Management Constructor Protocol is {Protocol}");
 
-            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+            using (ApiClient = new ApiClient(ServerUserName, ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 _logger.LogTrace("Entering APIClient Using clause");
@@ -68,15 +84,24 @@ namespace a10vthunder_orchestrator.Jobs
                     };
 
                 ApiClient.Logon();
+                ActivePartition activePartition = new ActivePartition
+                {
+                    curr_part_name = config.CertificateStoreDetails.StorePath
+                };
+                SetPartitionRequest partRequest = new SetPartitionRequest
+                {
+                    activepartition = activePartition
+                };
+                ApiClient.SetPartition(partRequest);
                 InventoryResult = CertManager.GetCert(ApiClient, config.JobCertificate.Alias);
-                ExistingCert = InventoryResult != null && InventoryResult?.InventoryList?.Count == 1;
+                var exactCert = InventoryResult?.InventoryList?.FirstOrDefault(c =>c?.Alias?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true);
 
                 switch (config.OperationType)
                 {
                     case CertStoreOperationType.Add:
                         try
                         {
-                            if (ExistingCert)
+                            if (exactCert!=null)
                             {
                                 if (config.Overwrite)
                                 {
@@ -94,8 +119,8 @@ namespace a10vthunder_orchestrator.Jobs
                                     };
                                 }
                             }
-                            
-                            if(!ExistingCert)
+
+                            if (exactCert == null)
                             {
                                 _logger.LogTrace($"Starting Add Job for {config.JobCertificate.Alias}");
                                 Add(config, ApiClient);
@@ -142,7 +167,7 @@ namespace a10vthunder_orchestrator.Jobs
 
                 _logger.LogTrace($"Finishing Process Job for {config.JobCertificate.Alias}");
                 return new JobResult
-                    {JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success};
+                { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
             }
         }
 
@@ -151,8 +176,91 @@ namespace a10vthunder_orchestrator.Jobs
         {
             try
             {
-                Remove(config, inventoryResult, apiClient);
-                Add(config, apiClient);
+                _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
+
+                var assignedServerTemplates = apiClient.GetServerTemplates();
+                var serverTemplatesUsingCert = assignedServerTemplates?.serverssllist?.Where(t =>
+                    t?.certificate?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                var assignedClientTemplates = apiClient.GetClientTemplates();
+
+                var clientTemplatesUsingCert = assignedClientTemplates?.clientssllist?
+                    .Where(t => t?.certificatelist != null &&
+                                t.certificatelist.Any(c =>
+                                    c?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true))
+                    .ToList();
+
+
+                bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
+                bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
+
+                string originalAlias = config.JobCertificate.Alias;
+
+                if (certInUseByServerTemplate || certInUseByClientTemplate)
+                {
+                    _logger.LogInformation($"Certificate {originalAlias} is currently assigned to one or more templates. Preparing to rename and re-import.");
+
+                    string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+                    string newAlias = $"{originalAlias}_{timestamp}";
+
+                    _logger.LogTrace($"Generated new alias: {newAlias}");
+                    config.JobCertificate.Alias = newAlias;
+
+                    // Step 1: Add new cert/key before updating templates
+                    Add(config, apiClient);
+
+                    // Step 2: Update all the Server templates using the old cert to now use the new one
+                    if (certInUseByServerTemplate)
+                    {
+                        foreach (var template in serverTemplatesUsingCert)
+                        {
+                            _logger.LogTrace($"Updating Server template {template.name} to use new cert/key alias {newAlias}");
+
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                cert = newAlias,
+                                key = newAlias
+                            };
+
+                            updateCertRequest.certificate = updateRequest;
+
+                            apiClient.UpdateServerTemplates(updateCertRequest, template.name);
+
+                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                        }
+                    }
+                    
+                    // Step 2a: Update all the Client templates using the old cert to now use the new one
+                    if (certInUseByClientTemplate)
+                    {
+                        foreach (var template in clientTemplatesUsingCert)
+                        {
+                            _logger.LogTrace($"Updating Client template {template.name} to use new cert/key alias {newAlias}");
+
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                cert = newAlias,
+                                key = newAlias
+                            };
+
+                            updateCertRequest.certificate = updateRequest;
+
+                            apiClient.UpdateClientTemplates(updateCertRequest, template.name);
+
+                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogTrace($"Certificate {originalAlias} is not in use. Proceeding with removal.");
+                    Remove(config, inventoryResult, apiClient);
+                    Add(config, apiClient);
+                }
+                apiClient.WriteMemory();
+                _logger.LogTrace($"Finished Replace method for {config.JobCertificate.Alias}");
             }
             catch (Exception ex)
             {
@@ -160,6 +268,8 @@ namespace a10vthunder_orchestrator.Jobs
                 throw;
             }
         }
+
+
 
         protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
             ApiClient apiClient)
@@ -187,6 +297,7 @@ namespace a10vthunder_orchestrator.Jobs
                     };
 
                 apiClient.RemoveCertificate(deleteKeyRoot);
+                apiClient.WriteMemory();
                 _logger.LogTrace($"Successful Delete of the {configInfo.JobCertificate.Alias} Private Key");
             }
             catch (Exception ex)
@@ -283,7 +394,7 @@ namespace a10vthunder_orchestrator.Jobs
                     apiClient.AddPrivateKey(sslKeyRequest, privateKeyString);
                     _logger.LogTrace($"Finished Add Key API Call for {configInfo.JobCertificate.Alias}");
                 }
-
+                apiClient.WriteMemory();
                 _logger.LogTrace($"Starting Log Off for Add {configInfo.JobCertificate.Alias}");
                 _logger.LogTrace($"Finished Log Off for Add {configInfo.JobCertificate.Alias}");
             }
