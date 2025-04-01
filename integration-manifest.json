@@ -4,7 +4,7 @@
 "name": "a10vThunder Orchestrator",
 "status": "production",
 "link_github": true,
-"release_project": "a10vthunder-orchestrator/a10vthunder-orchestrator.csproj",
+"release_project": "a10vthunder-orchestrator/A10vThunder.csproj",
 "release_dir": "a10vthunder-orchestrator/bin/Release",
 "update_catalog": true,
 "support_level": "kf-supported",
