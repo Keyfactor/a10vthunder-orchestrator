@@ -3,7 +3,7 @@ using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Microsoft.Extensions.Logging;
 
-namespace a10vthunder_orchestrator
+namespace a10vthunder
 {
     public class AnyErrors
     {
