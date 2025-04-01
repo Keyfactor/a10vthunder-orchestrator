@@ -201,7 +201,7 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                     _logger.LogInformation($"Certificate {originalAlias} is currently assigned to one or more templates. Preparing to rename and re-import.");
 
                     string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-                    string newAlias = $"{originalAlias}_{timestamp}";
+                    string newAlias = GenerateNewAlias(originalAlias);
 
                     _logger.LogTrace($"Generated new alias: {newAlias}");
                     config.JobCertificate.Alias = newAlias;
@@ -269,6 +269,37 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
             }
         }
 
+        private string GenerateNewAlias(string originalAlias)
+        {
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            string newAlias;
+
+            // Match a Unix timestamp suffix pattern (e.g., _1234567890 at the end of the string)
+            var match = System.Text.RegularExpressions.Regex.Match(originalAlias, @"_(\d{10})$");
+
+            if (match.Success)
+            {
+                // Replace the matched timestamp with the current one
+                newAlias = originalAlias.Substring(0, match.Index) + "_" + timestamp;
+            }
+            else
+            {
+                newAlias = $"{originalAlias}_{timestamp}";
+            }
+
+            // Ensure the alias is no more than 240 characters
+            if (newAlias.Length > 240)
+            {
+                // Truncate the beginning to fit the length
+                int maxBaseLength = 240 - (timestamp.Length + 1); // +1 for underscore
+                string truncatedBase = originalAlias.Length > maxBaseLength
+                    ? originalAlias.Substring(0, maxBaseLength)
+                    : originalAlias;
+                newAlias = $"{truncatedBase}_{timestamp}";
+            }
+
+            return newAlias;
+        }
 
 
         protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
