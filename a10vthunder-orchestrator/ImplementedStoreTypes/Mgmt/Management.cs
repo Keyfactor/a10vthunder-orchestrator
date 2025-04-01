@@ -15,7 +15,7 @@ using Renci.SshNet.Common;
 using System.Net.Sockets;
 using a10vthunder.Api;
 
-namespace Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
 {
     public class Management : IManagementJobExtension
     {
@@ -28,7 +28,7 @@ namespace Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs
             _resolver = resolver;
         }
 
-        public string ExtensionName => "ThunderMgmt";
+        public string ExtensionName => String.Empty;
         private string ServerPassword { get; set; }
         private string ServerUserName { get; set; }
 

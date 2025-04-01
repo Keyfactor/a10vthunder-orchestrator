@@ -15,7 +15,7 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 
-namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 {
     public class Management : IManagementJobExtension
     {
@@ -42,7 +42,7 @@ namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
         protected internal virtual string Alias { get; set; }
         private string ServerPassword { get; set; }
         private string ServerUserName { get; set; }
-        public string ExtensionName => "ThunderSsl";
+        public string ExtensionName => String.Empty;
 
         public string ResolvePamField(string name, string value)
         {
@@ -52,7 +52,7 @@ namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
-            _logger = LogHandler.GetClassLogger<Inventory>();
+            _logger = LogHandler.GetClassLogger<Management>();
             _logger.MethodEntry();
             ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
             ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);

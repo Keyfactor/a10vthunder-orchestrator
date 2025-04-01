@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 
-namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 {
     public class Inventory : IInventoryJobExtension
     {
@@ -31,7 +31,7 @@ namespace Keyfactor.Extensions.Orchestrator.ThunderSsl.Jobs
         protected internal virtual bool ReturnValue { get; set; }
         private string ServerPassword { get; set; }
         private string ServerUserName { get; set; }
-        public string ExtensionName => "ThunderSsl";
+        public string ExtensionName => String.Empty;
         public string ResolvePamField(string name, string value)
         {
             _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");

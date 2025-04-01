@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\a10vthunder-orchestrator\a10vthunder-orchestrator.csproj" />
+    <ProjectReference Include="..\a10vthunder-orchestrator\A10vThunder.csproj" />
   </ItemGroup>
 
   <ItemGroup>

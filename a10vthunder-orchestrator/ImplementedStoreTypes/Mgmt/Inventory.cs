@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Renci.SshNet;
 
-namespace Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
 {
     public class Inventory : IInventoryJobExtension
     {
@@ -23,7 +23,7 @@ namespace Keyfactor.Extensions.Orchestrator.ThunderMgmt.Jobs
             _resolver = resolver;
         }
 
-        public string ExtensionName => "ThunderMgmt";
+        public string ExtensionName => String.Empty;
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
