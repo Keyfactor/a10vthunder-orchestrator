@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using Keyfactor.Orchestrators.Extensions;
+using Newtonsoft.Json;
 
-namespace a10vthunder
+namespace a10vthunder.Api.Models
 {
-    public class InventoryResult
+    public class ManagementCertificate
     {
-        public virtual AnyErrors Errors { get; set; }
+        public int load { get; set; }
 
-        public virtual List<CurrentInventoryItem> InventoryList { get; set; }
+        [JsonProperty("file-url")]
+        public string fileurl { get; set; }
+    }
+
+    public class ManagementCertRequest
+    {
+        public ManagementCertificate certificate { get; set; }
     }
 }
