@@ -181,19 +181,6 @@ This orchestrator extension automates the process of uploading, inventorying, an
 
 ---
 
-##### ⚙️ Configuration Fields
-
-| Name              | Display Name                  | Description                                                  | Type   | Required |
-|-------------------|-------------------------------|--------------------------------------------------------------|--------|----------|
-| OrchToScpServerIp | Orch To Scp Server IP         | IP from the orchestrator to the SCP Linux server             | String | ✅        |
-| ScpPort           | Port Used For SCP             | Port used to connect to the SCP server                       | String | ✅        |
-| ScpUserName       | Username Used For SCP         | Username for SCP access on the Linux server                  | Secret | ✅        |
-| ScpPassword       | Password Used For SCP         | Password for SCP access on the Linux server                  | Secret | ✅        |
-| A10ToScpServerIp  | A10 Device To SCP Server IP   | IP used by the A10 device to reach the SCP server (can be private) | String | ✅   |
-| allowInvalidCert  | Allow Invalid Cert on A10 API | If true, allows self-signed/untrusted certs for A10 API access | Bool   | ✅ (default: true) |
-
----
-
 ##### 📡 API Call Example (From A10 Device)
 
 ```http
@@ -461,7 +448,16 @@ TODO Certificate Store Configuration is an optional section. If this section doe
 
 <details><summary>A10 Thunder Management Certificates (ThunderMgmt)</summary>
 
-TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+### ⚙️ Configuration Fields
+
+| Name              | Display Name                  | Description                                                  | Type   | Required |
+|-------------------|-------------------------------|--------------------------------------------------------------|--------|----------|
+| OrchToScpServerIp | Orch To Scp Server IP         | IP from the orchestrator to the SCP Linux server             | String | ✅        |
+| ScpPort           | Port Used For SCP             | Port used to connect to the SCP server                       | String | ✅        |
+| ScpUserName       | Username Used For SCP         | Username for SCP access on the Linux server                  | Secret | ✅        |
+| ScpPassword       | Password Used For SCP         | Password for SCP access on the Linux server                  | Secret | ✅        |
+| A10ToScpServerIp  | A10 Device To SCP Server IP   | IP used by the A10 device to reach the SCP server (can be private) | String | ✅   |
+| allowInvalidCert  | Allow Invalid Cert on A10 API | If true, allows self-signed/untrusted certs for A10 API access | Bool   | ✅ (default: true) |
 
 
 
