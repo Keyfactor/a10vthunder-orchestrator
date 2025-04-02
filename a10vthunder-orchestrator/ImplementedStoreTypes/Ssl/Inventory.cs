@@ -1,20 +1,40 @@
-﻿using System;
-using a10vthunder_orchestrator.Api;
+﻿// Copyright 2025 Keyfactor
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using a10vthunder;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace a10vthunder_orchestrator.Jobs
+
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 {
     public class Inventory : IInventoryJobExtension
     {
-        private readonly ILogger<Inventory> _logger;
+        private ILogger _logger;
 
-        public Inventory(ILogger<Inventory> logger)
+        private readonly IPAMSecretResolver _resolver;
+
+        public Inventory(IPAMSecretResolver resolver)
         {
-            _logger = logger;
+            _resolver = resolver;
         }
 
         protected internal virtual InventoryResult Result { get; set; }
@@ -23,11 +43,22 @@ namespace a10vthunder_orchestrator.Jobs
         protected internal virtual string Protocol { get; set; }
         protected internal virtual bool AllowInvalidCert { get; set; }
         protected internal virtual bool ReturnValue { get; set; }
-        public string ExtensionName => "VThunderU";
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
+        public string ExtensionName => String.Empty;
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
 
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
+            _logger = LogHandler.GetClassLogger<Inventory>();
             _logger.MethodEntry();
+            
+            ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+            ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
 
             dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
             Protocol = properties != null &&
@@ -39,10 +70,19 @@ namespace a10vthunder_orchestrator.Jobs
                     ? false
                     : bool.Parse(properties.allowInvalidCert.Value);
 
-            using (ApiClient = new ApiClient(config.ServerUsername, config.ServerPassword,
+            using (ApiClient = new ApiClient(ServerUserName, ServerPassword,
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
             {
                 ApiClient.Logon();
+                ActivePartition activePartition = new ActivePartition
+                {
+                    curr_part_name = config.CertificateStoreDetails.StorePath
+                };
+                SetPartitionRequest partRequest = new SetPartitionRequest
+                {
+                    activepartition = activePartition
+                };
+                ApiClient.SetPartition(partRequest);
                 try
                 {
                     _logger.LogTrace("Parse: Certificate Inventory: " + config.CertificateStoreDetails.StorePath);
@@ -61,12 +101,12 @@ namespace a10vthunder_orchestrator.Jobs
                     _logger.MethodExit();
 
                     if (ReturnValue == false)
-                            return new JobResult
-                            {
-                                Result = OrchestratorJobStatusJobResult.Failure,
-                                JobHistoryId = config.JobHistoryId,
-                                FailureMessage = "Error Invoking Inventory"
-                            };
+                        return new JobResult
+                        {
+                            Result = OrchestratorJobStatusJobResult.Failure,
+                            JobHistoryId = config.JobHistoryId,
+                            FailureMessage = "Error Invoking Inventory"
+                        };
 
                     if (Result.Errors.HasError)
                         return new JobResult
@@ -78,7 +118,7 @@ namespace a10vthunder_orchestrator.Jobs
                         };
 
                     return new JobResult
-                        {JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success};
+                    { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
                 }
                 catch (Exception e)
                 {

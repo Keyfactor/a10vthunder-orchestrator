@@ -12,15 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using Keyfactor.Orchestrators.Extensions;
+using Newtonsoft.Json;
 
-namespace a10vthunder
+namespace a10vthunder.Api.Models
 {
-    public class InventoryResult
+    public class Err
     {
-        public virtual AnyErrors Errors { get; set; }
-
-        public virtual List<CurrentInventoryItem> InventoryList { get; set; }
+        public int code { get; set; }
+        public string msg { get; set; }
+        public string location { get; set; }
     }
+
+    public class ErrorResponse
+    {
+        [JsonProperty("http-status")]
+        public int httpstatus { get; set; }
+        public string status { get; set; }
+        public Err err { get; set; }
+    }
+
+    public class ManagementErrorResponse
+    {
+        public Response response { get; set; }
+    }
+
 }
