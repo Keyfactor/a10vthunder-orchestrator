@@ -502,7 +502,6 @@ Case Number|Case Name|Store Path|Enrollment Params|Expected Results|Passed|Scree
 -------|----------|------------------|--------------------|----------------------------|----|--------  
 TC10|Add New Cert and Bind to Mgmt Port|/home/ec2-user|**Alias**:<br>&lt;random&gt;<br>**Overwrite**:<br>true|Cert Installed and Bound|True|![](images/TC10.gif)  
 TC11|Renew and Rebind Cert to Mgmt Port|/home/ec2-user|**Alias**:<br>&lt;same&gt;<br>**Overwrite**:<br>true|Cert Renewed and Bound Again|True|![](images/TC11.gif)  
-TC12|Attempt Renew/Repl Without Overwrite|/home/ec2-user|**Alias**:<br>&lt;same&gt;<br>**Overwrite**:<br>false|Fail: Overwrite Flag Missing|True|![](images/TC12.gif)  
 TC13|Remove Mgmt Bound Cert|/home/ec2-user|**Alias**:<br>&lt;same&gt;<br>**Overwrite**:<br>false|Cert Removed, Binding Left Intact|True|![](images/TC13.gif)  
 
 </details>
