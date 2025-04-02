@@ -1,193 +1,451 @@
-# a10vThunder
+<h1 align="center" style="border-bottom: none">
+    a10vThunder Universal Orchestrator Extension
+</h1>
 
-A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
+<p align="center">
+  <!-- Badges -->
+<img src="https://img.shields.io/badge/integration_status-production-3D1973?style=flat-square" alt="Integration Status: production" />
+<a href="https://github.com/Keyfactor/a10vthunder-orchestrator/releases"><img src="https://img.shields.io/github/v/release/Keyfactor/a10vthunder-orchestrator?style=flat-square" alt="Release" /></a>
+<img src="https://img.shields.io/github/issues/Keyfactor/a10vthunder-orchestrator?style=flat-square" alt="Issues" />
+<img src="https://img.shields.io/github/downloads/Keyfactor/a10vthunder-orchestrator/total?style=flat-square&label=downloads&color=28B905" alt="GitHub Downloads (all assets, all releases)" />
+</p>
 
-#### Integration status: Production - Ready for use in production environments.
+<p align="center">
+  <!-- TOC -->
+  <a href="#support">
+    <b>Support</b>
+  </a>
+  ·
+  <a href="#installation">
+    <b>Installation</b>
+  </a>
+  ·
+  <a href="#license">
+    <b>License</b>
+  </a>
+  ·
+  <a href="https://github.com/orgs/Keyfactor/repositories?q=orchestrator">
+    <b>Related Integrations</b>
+  </a>
+</p>
 
-## About the Keyfactor Universal Orchestrator Capability
+## Overview
 
-This repository contains a Universal Orchestrator Capability which is a plugin to the Keyfactor Universal Orchestrator. Within the Keyfactor Platform, Orchestrators are used to manage “certificate stores” &mdash; collections of certificates and roots of trust that are found within and used by various applications.
+TODO Overview is a required section
 
-The Universal Orchestrator is part of the Keyfactor software distribution and is available via the Keyfactor customer portal. For general instructions on installing Capabilities, see the “Keyfactor Command Orchestrator Installation and Configuration Guide” section of the Keyfactor documentation. For configuration details of this specific Capability, see below in this readme.
+The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types. Depending on your use case, you may elect to use one, or both of these Certificate Store Types. Descriptions of each are provided below.
 
-The Universal Orchestrator is the successor to the Windows Orchestrator. This Capability plugin only works with the Universal Orchestrator and does not work with the Windows Orchestrator.
-
-
-
-## Support for a10vThunder
-
-a10vThunder is supported by Keyfactor for Keyfactor customers. If you have a support issue, please open a support ticket with your Keyfactor representative.
-
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
-___
+<details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
 
 
+### ThunderSsl
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+TODO Overview is a required section
+</details>
+
+<details><summary>A10 Thunder Management Certificates (ThunderMgmt)</summary>
+
+
+### ThunderMgmt
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+TODO Overview is a required section
+</details>
+
+
+## Compatibility
+
+This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
+
+## Support
+The a10vThunder Universal Orchestrator extension If you have a support issue, please open a support ticket by either contacting your Keyfactor representative or via the Keyfactor Support Portal at https://support.keyfactor.com. 
+ 
+> To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
+
+## Requirements & Prerequisites
+
+Before installing the a10vThunder Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
+
+
+### 🔐 Setting Up API User and Access on A10 Thunder
+
+This section explains how to configure an API user and enable API (AXAPI) access on an A10 Thunder device using the CLI.
+
+#### ✅ Prerequisites
+
+- Admin credentials for the A10 Thunder device  
+- SSH access to the device  
+- Familiarity with A10 CLI commands
 
 ---
 
+#### 🧑‍💻 Step 1: Create an API User
 
+1. SSH into the A10 Thunder device:
 
+   ```bash
+   ssh admin@<DEVICE_IP>
+   ```
 
-## Platform Specific Notes
+2. Enter configuration mode:
 
-The minimum version of the Universal Orchestrator Framework needed to run this version of the extension is 
+   ```bash
+   configure terminal
+   ```
 
-The Keyfactor Universal Orchestrator may be installed on either Windows or Linux based platforms. The certificate operations supported by a capability may vary based what platform the capability is installed on. The table below indicates what capabilities are supported based on which platform the encompassing Universal Orchestrator is running.
-| Operation | Win | Linux |
-|-----|-----|------|
-|Supports Management Add|&check; |&check; |
-|Supports Management Remove|&check; |&check; |
-|Supports Create Store|  |  |
-|Supports Discovery|  |  |
-|Supports Renrollment|  |  |
-|Supports Inventory|&check; |&check; |
+3. Create a user account for API access:
 
+   ```bash
+   username <api_user> password <secure_password>
+   ```
 
+4. Assign admin privileges:
+
+   ```bash
+   username <api_user> privilege 15
+   ```
+
+5. (Optional) Assign a role if using Role-Based Access Control (RBAC):
+
+   ```bash
+   username <api_user> role <role_name>
+   ```
+
+6. Save the configuration:
+
+   ```bash
+   write memory
+   ```
 
 ---
 
+#### 🌐 Step 2: Enable and Verify API Access
 
-**A10 Networks vThunder Orchestrator**
+A10 Thunder supports AXAPI, a REST-based API. Follow these steps to confirm access:
 
-**Overview**
+1. Ensure the management interface allows API traffic (if access-lists are used):
 
-A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
+   ```bash
+   ip access-list standard mgmt
+     permit <MGMT_SUBNET> <SUBNET_MASK>
+   exit
 
-This agent implements three job types – Inventory, Management Add, and Management Remove. Below are the steps necessary to configure this AnyAgent.  It supports adding certificates with or without private keys.
+   interface management
+     access-list mgmt
+   ```
+
+2. (Optional) Bind SSL cert for secure access:
+
+   ```bash
+   slb ssl-cert <CERT_NAME>
+     key <KEY_FILE>
+     certificate <CERT_FILE>
+   ```
+
+3. Authenticate using AXAPI v3 (example using `curl`):
+
+   ```bash
+   curl -k -X POST https://<DEVICE_IP>/axapi/v3/auth \
+     -H "Content-Type: application/json" \
+     -d '{"credentials": {"username": "<api_user>", "password": "<password>"}}'
+   ```
+
+   A successful response will include an `authresponse` with an authorization token.
+
+---
+
+#### 🔁 Step 3: Use the API Token
+
+Use the returned token for authorized API calls:
+
+```bash
+curl -k -X GET https://<DEVICE_IP>/axapi/v3/system/resource-usage \
+  -H "Authorization: A10 <AUTH_TOKEN>"
+```
+
+---
+
+#### 📌 Notes
+
+- You can also create users via the GUI:  
+  **System → Admin → Users**
+
+- Roles (for RBAC) can be managed under:  
+  **System → Admin → Role**
+
+- Always use HTTPS and avoid hardcoding credentials in scripts
+
+---
+
+#### 📚 Resources
+
+- [AXAPI Documentation](https://support.a10networks.com/)
+- [A10 Thunder CLI Reference Guide](https://docs.a10networks.com/)
+
+<details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
+
+### A10 Thunder Ssl Certificates Requirements
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
 
-**A10 vThunder Configuration**
-
-1. Read up on [A10 Networks ADC](https://a10networks.optrics.com/downloads/datasheets/Thunder-Application-Delivery-Controller-ADC.pdf) and how it works.
-2. A user account is needed with the appropriate permissions on vThunder to manage certificates.
-
-**1. Create the New Certificate Store Type for the A10 vThunder Orchestrator**
-
-In Keyfactor Command create a new Certificate Store Type similar to the one below:
-
-#### STORE TYPE CONFIGURATION
-SETTING TAB  |  CONFIG ELEMENT	| DESCRIPTION
-------|-----------|------------------
-Basic |Name	|Descriptive name for the Store Type.  A10 vThunder can be used.
-Basic |Short Name	|The short name that identifies the registered functionality of the orchestrator. Must be vThunderU
-Basic |Custom Capability|Unchecked
-Basic |Job Types	|Inventory, Add, and Remove are the supported job types. 
-Basic |Needs Server	|Must be checked
-Basic |Blueprint Allowed	|checked
-Basic |Requires Store Password	|Determines if a store password is required when configuring an individual store.  This must be unchecked.
-Basic |Supports Entry Password	|Determined if an individual entry within a store can have a password.  This must be unchecked.
-Advanced |Store Path Type| Determines how the user will enter the store path when setting up the cert store.  Freeform
-Advanced |Supports Custom Alias	|Determines if an individual entry within a store can have a custom Alias.  This must be Required
-Advanced |Private Key Handling |Determines how the orchestrator deals with private keys.  Optional
-Advanced |PFX Password Style |Determines password style for the PFX Password. Default
-Custom Fields|protocol|Name:protocol Display Name:Protocol Type:Multiple Choice (http,https) Default Value:https Required:True
-Custom Fields|allowInvalidCert|Name:allowInvalidCert Display Name:Allow Invalid Cert Type:Bool Default Value:false Required:True
-Entry Parameters|N/A| There are no Entry Parameters
-
-**Basic Settings:**
-
-![](Media/Images/CertStoreType-Basic.gif)
-
-**Advanced Settings:**
-
-![](Media/Images/CertStoreType-Advanced.gif)
-
-**Custom Fields:**
-
-![](Media/Images/CertStoreType-CustomFields.gif)
-
-**Entry Params:**
-
-![](Media/Images/CertStoreType-EntryParameters.gif)
-
-**2. Register the A10 vThunder Orchestrator with Keyfactor**
-1. Stop the Keyfactor Universal Orchestrator Service for the orchestrator you plan to install this extension to run on.
-2. In the Keyfactor Orchestrator installation folder (by convention usually C:\Program Files\Keyfactor\Keyfactor Orchestrator), find the "extensions" folder. Underneath that, create a new folder named "vThunderU". You may choose to use a different name, but then you must edit the manifest.json file downloaded from GitHub (Step 3) and modify based on Step 5 below.
-3. Download the latest version of the A10 orchestrator extension from [GitHub](https://github.com/Keyfactor/a10vthunder-orchestrator).
-4. Copy the contents of the download installation zip file to the folder created in Step 2.
-5. (Optional) If you decided to name the folder created in Step 2 to something different than the suggested name (vThunderU), you will need to edit the manifest.json file. Modify "CertStores.{folder name}.Capability" to the folder name you created in Step 2.
-6. Start the Keyfactor Universal Orchestrator Service.
-
-Please reference the "Keyfactor Orchestrators Installation and Configuration Guide" obtainable from your Keyfactor contact/representative for more information regarding this step.
-
-**3. Create a A10 vThunder Certificate Store within Keyfactor Command**
-In Keyfactor Command create a new Certificate Store similar to the one below
-
-![](Media/Images/CertStore1.gif)
-![](Media/Images/CertStore2.gif)
-
-#### STORE CONFIGURATION 
-CONFIG ELEMENT	|DESCRIPTION
-----------------|---------------
-Category	|The type of certificate store to be configured. Select category based on the display name configured above "VThunder Universal".
-Container	|This is a logical grouping of like stores. This configuration is optional and does not impact the functionality of the store.
-Client Machine	|The url to the vThunder api.  This file should the url and port of the vThunder api sample vThunder.test.com:1113.
-Store Path	|This will be "cert".  This is not used but just hard code it as "cert".
-Allow Invalid Cert|Only used for testing should be false in production.
-Protocol| http is only used for testing should be https in production
-Orchestrator	|This is the orchestrator server registered with the appropriate capabilities to manage this certificate store type. 
-Inventory Schedule	|The interval that the system will use to report on what certificates are currently in the store. 
-Use SSL	|This should be checked.
-User	|This is the user name for the vThunder api to access the certficate management functionality.
-Password |This is the password for the vThunder api to access the certficate management functionality.
-
-*** 
-
-#### Usage
-
-**Adding New Certificate New Alias**
-
-![](Media/Images/NewCertNewAlias.gif)
-
-*** 
-
-**Replace Cert With Same Alias**
-
-![](Media/Images/ReplaceCertSameAlias.gif)
-
-*** 
-
-**Add Cert No Private Key**
-
-![](Media/Images/AddPubCert.gif)
-
-*** 
-
-**Replace Cert No Private Key**
-
-![](Media/Images/PubCertReplace.gif)
-
-*** 
-
-**Remove Cert No Private Key**
-
-![](Media/Images/RemovePubCert.gif)
-
-*** 
-
-**Remove Cert and Private Key**
-
-![](Media/Images/RemoveCertAndKey.gif)
-
-*** 
-
-**Certificate Inventory**
-
-![](Media/Images/CertificateInventory.gif)
-
-#### TEST CASES
-Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
-------------|---------|----------------|--------------|----------|----------------|--------------
-1|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|The new KeyAndCertBTest certificate and private key will be created in the ADC/SSL Cerificates area on vThunder.|True
-1a|Replace Alias with no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|KeyAndCertBTest|Error Saying Overwrite Flag Needs To Be Used|True
-1b|Replace Alias with overwrite flag|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|Cert will be replaced because overwrite flag was used|True
-2|Add Cert Without Private Key|This will create a cert with no private key on vThunder|false|NewCertNoPk|Only Cert will be added to vThunder with no private key|True
-2a|Replace Cert Without Private Key|This will Replace a cert with no private key on vThunder|true|NewCertNoPk|Only Cert will be replaced on vThunder with no private key|True
-2b|Replace Cert Without Private Key no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|NewCertNoPk|Error Saying Overwrite Flag Needs To Be Used|True
-3|Remove Certificate and Private Key|Certificate and Private Key Will Be Removed from A10|N/A|KeyAndCertBTest|Cert and Key will be removed from vThunder and Keyfactor Store|True
-3a|Remove Certificate without Private Key|Certificate Will Be Removed from A10|N/A|KeyAndCertBTest|Cert will be removed from vThunder and Keyfactor Store|True
-4|Inventory Certificates with Private Key|Inventory of Certificates with private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
-4a|Inventory Certificates without Private Key|Inventory of Certificates without private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
+TODO Requirements is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+</details>
 
 
 
+<details><summary>A10 Thunder Management Certificates (ThunderMgmt)</summary>
+
+### A10 Thunder Management Certificates Requirements
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+TODO Requirements is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+</details>
+
+
+
+
+
+## Create Certificate Store Types
+
+To use the a10vThunder Universal Orchestrator extension, you **must** create the Certificate Store Types required for your usecase. This only needs to happen _once_ per Keyfactor Command instance.
+
+The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types. Depending on your use case, you may elect to use one, or both of these Certificate Store Types.
+
+<details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
+
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+* **Create ThunderSsl using kfutil**:
+
+    ```shell
+    # A10 Thunder Ssl Certificates
+    kfutil store-types create ThunderSsl
+    ```
+
+* **Create ThunderSsl manually in the Command UI**:
+    <details><summary>Create ThunderSsl manually in the Command UI</summary>
+
+    Create a store type called `ThunderSsl` with the attributes in the tables below:
+
+    #### Basic Tab
+    | Attribute | Value | Description |
+    | --------- | ----- | ----- |
+    | Name | A10 Thunder Ssl Certificates | Display name for the store type (may be customized) |
+    | Short Name | ThunderSsl | Short display name for the store type |
+    | Capability | ThunderSsl | Store type name orchestrator will register with. Check the box to allow entry of value |
+    | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
+    | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
+    | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
+    | Supports Reenrollment | ✅ Checked |  Indicates that the Store Type supports Reenrollment |
+    | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
+    | Needs Server | ✅ Checked | Determines if a target server name is required when creating store |
+    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
+    | Uses PowerShell | 🔲 Unchecked | Determines if underlying implementation is PowerShell |
+    | Requires Store Password | 🔲 Unchecked | Enables users to optionally specify a store password when defining a Certificate Store. |
+    | Supports Entry Password | 🔲 Unchecked | Determines if an individual entry within a store can have a password. |
+
+    The Basic tab should look like this:
+
+    ![ThunderSsl Basic Tab](docsource/images/ThunderSsl-basic-store-type-dialog.png)
+
+    #### Advanced Tab
+    | Attribute | Value | Description |
+    | --------- | ----- | ----- |
+    | Supports Custom Alias | Forbidden | Determines if an individual entry within a store can have a custom Alias. |
+    | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
+    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
+
+    The Advanced tab should look like this:
+
+    ![ThunderSsl Advanced Tab](docsource/images/ThunderSsl-advanced-store-type-dialog.png)
+
+    > For Keyfactor **Command versions 24.4 and later**, a Certificate Format dropdown is available with PFX and PEM options. Ensure that **PFX** is selected, as this determines the format of new and renewed certificates sent to the Orchestrator during a Management job. Currently, all Keyfactor-supported Orchestrator extensions support only PFX.
+
+    #### Custom Fields Tab
+    Custom fields operate at the certificate store level and are used to control how the orchestrator connects to the remote target server containing the certificate store to be managed. The following custom fields should be added to the store type:
+
+    | Name | Display Name | Description | Type | Default Value/Options | Required |
+    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
+    | allowInvalidCert | Allow Invalid Cert on A10 Management API |  | Bool | true | ✅ Checked |
+
+    The Custom Fields tab should look like this:
+
+    ![ThunderSsl Custom Fields Tab](docsource/images/ThunderSsl-custom-fields-store-type-dialog.png)
+
+
+
+    </details>
+</details>
+
+<details><summary>A10 Thunder Management Certificates (ThunderMgmt)</summary>
+
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+* **Create ThunderMgmt using kfutil**:
+
+    ```shell
+    # A10 Thunder Management Certificates
+    kfutil store-types create ThunderMgmt
+    ```
+
+* **Create ThunderMgmt manually in the Command UI**:
+    <details><summary>Create ThunderMgmt manually in the Command UI</summary>
+
+    Create a store type called `ThunderMgmt` with the attributes in the tables below:
+
+    #### Basic Tab
+    | Attribute | Value | Description |
+    | --------- | ----- | ----- |
+    | Name | A10 Thunder Management Certificates | Display name for the store type (may be customized) |
+    | Short Name | ThunderMgmt | Short display name for the store type |
+    | Capability | ThunderMgmt | Store type name orchestrator will register with. Check the box to allow entry of value |
+    | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
+    | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
+    | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
+    | Supports Reenrollment | ✅ Checked |  Indicates that the Store Type supports Reenrollment |
+    | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
+    | Needs Server | ✅ Checked | Determines if a target server name is required when creating store |
+    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
+    | Uses PowerShell | 🔲 Unchecked | Determines if underlying implementation is PowerShell |
+    | Requires Store Password | 🔲 Unchecked | Enables users to optionally specify a store password when defining a Certificate Store. |
+    | Supports Entry Password | 🔲 Unchecked | Determines if an individual entry within a store can have a password. |
+
+    The Basic tab should look like this:
+
+    ![ThunderMgmt Basic Tab](docsource/images/ThunderMgmt-basic-store-type-dialog.png)
+
+    #### Advanced Tab
+    | Attribute | Value | Description |
+    | --------- | ----- | ----- |
+    | Supports Custom Alias | Forbidden | Determines if an individual entry within a store can have a custom Alias. |
+    | Private Key Handling | Required | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
+    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
+
+    The Advanced tab should look like this:
+
+    ![ThunderMgmt Advanced Tab](docsource/images/ThunderMgmt-advanced-store-type-dialog.png)
+
+    > For Keyfactor **Command versions 24.4 and later**, a Certificate Format dropdown is available with PFX and PEM options. Ensure that **PFX** is selected, as this determines the format of new and renewed certificates sent to the Orchestrator during a Management job. Currently, all Keyfactor-supported Orchestrator extensions support only PFX.
+
+    #### Custom Fields Tab
+    Custom fields operate at the certificate store level and are used to control how the orchestrator connects to the remote target server containing the certificate store to be managed. The following custom fields should be added to the store type:
+
+    | Name | Display Name | Description | Type | Default Value/Options | Required |
+    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
+    | OrchToScpServerIp | Orch To Scp Server Ip |  | String |  | ✅ Checked |
+    | ScpPort | Port Used For Scp |  | String |  | ✅ Checked |
+    | ScpUserName | UserName Used For Scp |  | Secret |  | ✅ Checked |
+    | ScpPassword | Password Used For Scp |  | Secret |  | ✅ Checked |
+    | A10ToScpServerIp | A10 Device To Scp Server Ip |  | String |  | ✅ Checked |
+    | allowInvalidCert | Allow Invalid Cert on A10 Management API |  | Bool | true | ✅ Checked |
+
+    The Custom Fields tab should look like this:
+
+    ![ThunderMgmt Custom Fields Tab](docsource/images/ThunderMgmt-custom-fields-store-type-dialog.png)
+
+
+
+    </details>
+</details>
+
+
+## Installation
+
+1. **Download the latest a10vThunder Universal Orchestrator extension from GitHub.** 
+
+    Navigate to the [a10vThunder Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/a10vthunder-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `a10vthunder-orchestrator` .NET version to download |
+    | --------- | ----------- | ----------- | ----------- |
+    | Older than `11.0.0` | | | `net6.0` |
+    | Between `11.0.0` and `11.5.1` (inclusive) | `net6.0` | | `net6.0` | 
+    | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` | 
+    | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` | 
+    | `11.6` _and_ newer | `net8.0` | | `net8.0` |
+
+    Unzip the archive containing extension assemblies to a known location.
+
+    > **Note** If you don't see an asset with a corresponding .NET version, you should always assume that it was compiled for `net6.0`.
+
+2. **Locate the Universal Orchestrator extensions directory.**
+
+    * **Default on Windows** - `C:\Program Files\Keyfactor\Keyfactor Orchestrator\extensions`
+    * **Default on Linux** - `/opt/keyfactor/orchestrator/extensions`
+    
+3. **Create a new directory for the a10vThunder Universal Orchestrator extension inside the extensions directory.**
+        
+    Create a new directory called `a10vthunder-orchestrator`.
+    > The directory name does not need to match any names used elsewhere; it just has to be unique within the extensions directory.
+
+4. **Copy the contents of the downloaded and unzipped assemblies from __step 2__ to the `a10vthunder-orchestrator` directory.**
+
+5. **Restart the Universal Orchestrator service.**
+
+    Refer to [Starting/Restarting the Universal Orchestrator service](https://software.keyfactor.com/Core-OnPrem/Current/Content/InstallingAgents/NetCoreOrchestrator/StarttheService.htm).
+
+
+
+> The above installation steps can be supplimented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/InstallingAgents/NetCoreOrchestrator/CustomExtensions.htm?Highlight=extensions).
+
+
+## Post Installation
+
+TODO Post Installation is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+## Defining Certificate Stores
+
+The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types, each of which implements different functionality. Refer to the individual instructions below for each Certificate Store Type that you deemed necessary for your use case from the installation section.
+
+<details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
+
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+
+> The content in this section can be supplimented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Certificate%20Stores.htm?Highlight=certificate%20store).
+
+
+</details>
+
+<details><summary>A10 Thunder Management Certificates (ThunderMgmt)</summary>
+
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+
+> The content in this section can be supplimented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Certificate%20Stores.htm?Highlight=certificate%20store).
+
+
+</details>
+
+## Discovering Certificate Stores with the Discovery Job
+TODO Discovery is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+
+### A10 Thunder Management Certificates Discovery Job
+TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+TODO Discovery Job Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
+
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE).
+
+## Related Integrations
+
+See all [Keyfactor Universal Orchestrator extensions](https://github.com/orgs/Keyfactor/repositories?q=orchestrator).
