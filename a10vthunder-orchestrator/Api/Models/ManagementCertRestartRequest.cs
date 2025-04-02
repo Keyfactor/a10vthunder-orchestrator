@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using Keyfactor.Orchestrators.Extensions;
-
-namespace a10vthunder
+namespace a10vthunder.Api.Models
 {
-    public class InventoryResult
+    public class ManagementCertRestartRequest
     {
-        public virtual AnyErrors Errors { get; set; }
+        public Secure secure { get; set; }
+    }
 
-        public virtual List<CurrentInventoryItem> InventoryList { get; set; }
+    public class Secure
+    {
+        public int restart { get; set; }
     }
 }
