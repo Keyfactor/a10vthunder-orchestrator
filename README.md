@@ -31,7 +31,7 @@
 
 ## Overview
 
-TODO Overview is a required section
+
 
 The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types. Depending on your use case, you may elect to use one, or both of these Certificate Store Types. Descriptions of each are provided below.
 
@@ -463,6 +463,10 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 </details>
 
 
+
+## 🔍 Difference Between Management Certificates and SSL Certificates on A10 Thunder
+
+In an A10 Thunder device, certificates are used in different contexts depending on their role. Two commonly used types are **Management Certificates** and **SSL Certificates**.
 
 
 ## License
