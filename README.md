@@ -70,120 +70,61 @@ The a10vThunder Universal Orchestrator extension If you have a support issue, pl
 Before installing the a10vThunder Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
 
 
-### 🔐 Setting Up API User and Access on A10 Thunder
+### Creating a User for API Access on A10 vThunder
 
-This section explains how to configure an API user and enable API (AXAPI) access on an A10 Thunder device using the CLI.
+This guide explains how to create a user on A10 vThunder for API (AXAPI) access with appropriate privileges.
 
-#### ✅ Prerequisites
+#### Step-by-Step Instructions
 
-- Admin credentials for the A10 Thunder device  
-- SSH access to the device  
-- Familiarity with A10 CLI commands
-
----
-
-#### 🧑‍💻 Step 1: Create an API User
-
-1. SSH into the A10 Thunder device:
-
-   ```bash
-   ssh admin@<DEVICE_IP>
-   ```
-
-2. Enter configuration mode:
-
+1. **Enter configuration mode:**
    ```bash
    configure terminal
    ```
 
-3. Create a user account for API access:
-
+2. **Create the user and set a password:**
    ```bash
-   username <api_user> password <secure_password>
+   admin apiuser password yourStrongPassword
    ```
 
-4. Assign admin privileges:
+   Replace `apiuser` with the desired username, and `yourStrongPassword` with a secure password.
 
+3. **Assign necessary privileges:**
    ```bash
-   username <api_user> privilege 15
+   privilege read
+   privilege write
+   privilege partition-enable-disable
+   privilege partition-read
+   privilege partition-write
    ```
 
-5. (Optional) Assign a role if using Role-Based Access Control (RBAC):
+   These privileges grant the user:
+   - Global read and write access
+   - Per-partition read and write access
+   - Permission to enable or disable partitions
 
+4. **(Optional) Enable external health monitor privilege (if needed):**
    ```bash
-   username <api_user> role <role_name>
+   privilege hm
    ```
 
-6. Save the configuration:
-
+5. **Exit user configuration:**
    ```bash
-   write memory
-   ```
-
----
-
-#### 🌐 Step 2: Enable and Verify API Access
-
-A10 Thunder supports AXAPI, a REST-based API. Follow these steps to confirm access:
-
-1. Ensure the management interface allows API traffic (if access-lists are used):
-
-   ```bash
-   ip access-list standard mgmt
-     permit <MGMT_SUBNET> <SUBNET_MASK>
    exit
-
-   interface management
-     access-list mgmt
    ```
 
-2. (Optional) Bind SSL cert for secure access:
+#### Notes
 
-   ```bash
-   slb ssl-cert <CERT_NAME>
-     key <KEY_FILE>
-     certificate <CERT_FILE>
-   ```
+- This user will now be able to authenticate and perform actions via A10's AXAPI (v2/v3) interface.
+- Role-Based Access (RBA) and partition assignment can further fine-tune access control.
 
-3. Authenticate using AXAPI v3 (example using `curl`):
+#### Example Login via AXAPI
 
-   ```bash
-   curl -k -X POST https://<DEVICE_IP>/axapi/v3/auth \
-     -H "Content-Type: application/json" \
-     -d '{"credentials": {"username": "<api_user>", "password": "<password>"}}'
-   ```
-
-   A successful response will include an `authresponse` with an authorization token.
-
----
-
-#### 🔁 Step 3: Use the API Token
-
-Use the returned token for authorized API calls:
-
+Example using `curl` for AXAPI v3 login:
 ```bash
-curl -k -X GET https://<DEVICE_IP>/axapi/v3/system/resource-usage \
-  -H "Authorization: A10 <AUTH_TOKEN>"
+curl -X POST https://<vThunder-IP>/axapi/v3/auth \
+  -d '{"credentials":{"username":"apiuser","password":"yourStrongPassword"}}' \
+  -H "Content-Type: application/json"
 ```
-
----
-
-#### 📌 Notes
-
-- You can also create users via the GUI:  
-  **System → Admin → Users**
-
-- Roles (for RBAC) can be managed under:  
-  **System → Admin → Role**
-
-- Always use HTTPS and avoid hardcoding credentials in scripts
-
----
-
-#### 📚 Resources
-
-- [AXAPI Documentation](https://support.a10networks.com/)
-- [A10 Thunder CLI Reference Guide](https://docs.a10networks.com/)
 
 <details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
 
