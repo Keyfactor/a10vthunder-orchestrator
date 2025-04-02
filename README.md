@@ -39,8 +39,6 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 
 
 ### ThunderSsl
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
-
 
 #### 🔒 SSL Certificates
 
@@ -100,8 +98,6 @@ Before installing the a10vThunder Universal Orchestrator extension, we recommend
 <details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
 
 ### A10 Thunder Ssl Certificates Requirements
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
-
 
 #### Creating a User for API Access on A10 vThunder
 
@@ -253,8 +249,6 @@ To use the a10vThunder Universal Orchestrator extension, you **must** create the
 The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types. Depending on your use case, you may elect to use one, or both of these Certificate Store Types.
 
 <details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
-
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
 
 * **Create ThunderSsl using kfutil**:
@@ -435,9 +429,11 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 
 <details><summary>A10 Thunder Ssl Certificates (ThunderSsl)</summary>
 
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+### ⚙️ Configuration Fields
 
-TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+| Name              | Display Name                  | Description                                                  | Type   | Required |
+|-------------------|-------------------------------|--------------------------------------------------------------|--------|----------|
+| allowInvalidCert  | Allow Invalid Cert on A10 API | If true, allows self-signed/untrusted certs for A10 API access | Bool   | ✅ (default: true) |
 
 
 
