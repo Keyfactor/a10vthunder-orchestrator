@@ -318,18 +318,6 @@ TODO Certificate Store Configuration is an optional section. If this section doe
 ## Discovering Certificate Stores with the Discovery Job
 TODO Discovery is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
-<details><summary>A10 Thunder Ssl Certificates</summary>
-
-
-### A10 Thunder Ssl Certificates Discovery Job
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
-
-
-TODO Discovery Job Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
-</details>
-
-
-<details><summary>A10 Thunder Management Certificates</summary>
 
 
 ### A10 Thunder Management Certificates Discovery Job
@@ -337,8 +325,6 @@ TODO Global Store Type Section is an optional section. If this section doesn't s
 
 
 TODO Discovery Job Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
-</details>
-
 
 
 
