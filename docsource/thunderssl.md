@@ -78,5 +78,9 @@ curl -X POST https://<vThunder-IP>/axapi/v3/auth \
 
 ## Certificate Store Configuration
 
-TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+### ⚙️ Configuration Fields
+
+| Name              | Display Name                  | Description                                                  | Type   | Required |
+|-------------------|-------------------------------|--------------------------------------------------------------|--------|----------|
+| allowInvalidCert  | Allow Invalid Cert on A10 API | If true, allows self-signed/untrusted certs for A10 API access | Bool   | ✅ (default: true) |
 
