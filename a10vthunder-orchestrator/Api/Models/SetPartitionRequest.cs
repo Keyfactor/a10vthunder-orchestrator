@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using Keyfactor.Orchestrators.Extensions;
+using Newtonsoft.Json;
 
-namespace a10vthunder
+namespace a10vthunder.Api.Models
 {
-    public class InventoryResult
+    public class ActivePartition
     {
-        public virtual AnyErrors Errors { get; set; }
+        public string curr_part_name { get; set; }
+    }
 
-        public virtual List<CurrentInventoryItem> InventoryList { get; set; }
+    public class SetPartitionRequest
+    {
+        [JsonProperty("active-partition")]
+        public ActivePartition activepartition { get; set; }
     }
 }
