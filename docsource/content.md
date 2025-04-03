@@ -15,7 +15,7 @@ The Keyfactor A10 vThunder Universal Orchestrator Extension facilitates the mana
 - **Certificate Inventory Management**: Provides visibility into existing certificates on the appliance.
 - **Integration with Keyfactor Command**: Enables centralized certificate lifecycle management.
 
-### Requirements
+### Integration Requirements
 
 - **A10 vThunder Appliance**: Running firmware version 6.0.5-P5 (Build 51).
 - **Keyfactor Command Platform**: For orchestrating certificate management tasks.
