@@ -31,7 +31,15 @@
 
 ## Overview
 
+The Keyfactor A10 vThunder Universal Orchestrator Extension facilitates the management of SSL certificates on A10 Networks' vThunder appliances. It offers two primary certificate store types:
 
+1. **ThunderSsl**: Manages SSL certificates for securing traffic handled by the device, such as in SSL offloading, SSL intercept, and reverse proxy configurations.
+2. **ThunderMgmt**: Manages certificates securing HTTPS access to the A10 management interface (GUI/API).
+
+- **A10 Thunder Version**: Tested with A10 Thunder v6.0.5-P5 (Build 51).
+- **Automated Certificate Deployment**: Streamlines the deployment of SSL certificates to the A10 vThunder appliance.
+- **Certificate Inventory Management**: Provides visibility into existing certificates on the appliance.
+- **Integration with Keyfactor Command**: Enables centralized certificate lifecycle management.
 
 The a10vThunder Universal Orchestrator extension implements 2 Certificate Store Types. Depending on your use case, you may elect to use one, or both of these Certificate Store Types. Descriptions of each are provided below.
 
@@ -463,10 +471,6 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 </details>
 
 
-
-## 🔍 Difference Between Management Certificates and SSL Certificates on A10 Thunder
-
-In an A10 Thunder device, certificates are used in different contexts depending on their role. Two commonly used types are **Management Certificates** and **SSL Certificates**.
 
 ## Test Cases
 <details>  
