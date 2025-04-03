@@ -5,24 +5,10 @@ The Keyfactor A10 vThunder Universal Orchestrator Extension facilitates the mana
 1. **ThunderSsl**: Manages SSL certificates for securing traffic handled by the device, such as in SSL offloading, SSL intercept, and reverse proxy configurations.
 2. **ThunderMgmt**: Manages certificates securing HTTPS access to the A10 management interface (GUI/API).
 
-### Compatibility
-
 - **A10 Thunder Version**: Tested with A10 Thunder v6.0.5-P5 (Build 51).
-
-### Key Features
-
 - **Automated Certificate Deployment**: Streamlines the deployment of SSL certificates to the A10 vThunder appliance.
 - **Certificate Inventory Management**: Provides visibility into existing certificates on the appliance.
 - **Integration with Keyfactor Command**: Enables centralized certificate lifecycle management.
-
-### Integration Requirements
-
-- **A10 vThunder Appliance**: Running firmware version 6.0.5-P5 (Build 51).
-- **Keyfactor Command Platform**: For orchestrating certificate management tasks.
-- **Network Connectivity**: Ensures communication between Keyfactor Command and the A10 vThunder appliance.
-- **Authentication Credentials**: Necessary for interacting with the A10 vThunder API.
-
-In an A10 Thunder device, certificates are used in different contexts depending on their role. Two commonly used types are **Management Certificates** and **SSL Certificates**.
 
 ## Test Cases  
 <details>  
