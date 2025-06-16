@@ -367,11 +367,41 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 {
                     _logger.LogInformation($"Re-binding {virtualServiceBackups.Count} virtual service port bindings after certificate replacement.");
 
-                    foreach (var backup in virtualServiceBackups)
+                    // 1. Group backups by virtual server + port + protocol
+                    var portBindings = virtualServiceBackups
+                        .GroupBy(b => new { b.VirtualServerName, b.Port, b.Protocol })
+                        .ToList();
+
+                    // 2. For each unique port, build a single update with both template bindings
+                    foreach (var bindingGroup in portBindings)
                     {
-                        _logger.LogTrace($"Re-binding {backup.TemplateType} template '{backup.TemplateName}' to virtual service '{backup.VirtualServerName}' port {backup.Port}");
-                        apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.TemplateName);
+                        var vsName = bindingGroup.Key.VirtualServerName;
+                        var port = bindingGroup.Key.Port;
+                        var protocol = bindingGroup.Key.Protocol;
+
+                        var update = new VirtualServerPortUpdate
+                        {
+                            PortNumber = port,
+                            Protocol = protocol
+                        };
+
+                        foreach (var b in bindingGroup)
+                        {
+                            if (b.TemplateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
+                                update.TemplateServerSsl = b.TemplateName;
+                            else if (b.TemplateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
+                                update.TemplateClientSsl = b.TemplateName;
+                            else
+                                throw new ArgumentException($"Unknown template type: {b.TemplateType}");
+                        }
+
+                        var bindRequest = new VirtualServerPortUpdateRequest { Port = update };
+                        var requestJson = JsonConvert.SerializeObject(bindRequest);
+                        _logger.LogTrace($"Re-binding templates to VS={vsName} Port={port} Protocol={protocol} => {requestJson}");
+
+                        apiClient.PutVirtualServerPort(vsName, port, protocol, requestJson);
                     }
+
                 }
 
                 apiClient.WriteMemory();
@@ -389,7 +419,40 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                         try
                         {
                             _logger.LogTrace($"Rolling back binding for virtual service '{backup.VirtualServerName}' port {backup.Port}");
-                            apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.OriginalTemplateName);
+                            // 1. Group backups by virtual server + port + protocol
+                            var portBindings = virtualServiceBackups
+                                .GroupBy(b => new { b.VirtualServerName, b.Port, b.Protocol })
+                                .ToList();
+
+                            // 2. For each unique port, build a single update with both template bindings
+                            foreach (var bindingGroup in portBindings)
+                            {
+                                var vsName = bindingGroup.Key.VirtualServerName;
+                                var port = bindingGroup.Key.Port;
+                                var protocol = bindingGroup.Key.Protocol;
+
+                                var update = new VirtualServerPortUpdate
+                                {
+                                    PortNumber = port,
+                                    Protocol = protocol
+                                };
+
+                                foreach (var b in bindingGroup)
+                                {
+                                    if (b.TemplateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
+                                        update.TemplateServerSsl = b.TemplateName;
+                                    else if (b.TemplateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
+                                        update.TemplateClientSsl = b.TemplateName;
+                                    else
+                                        throw new ArgumentException($"Unknown template type: {b.TemplateType}");
+                                }
+
+                                var bindRequest = new VirtualServerPortUpdateRequest { Port = update };
+                                var requestJson = JsonConvert.SerializeObject(bindRequest);
+                                _logger.LogTrace($"Re-binding templates to VS={vsName} Port={port} Protocol={protocol} => {requestJson}");
+
+                                apiClient.PutVirtualServerPort(vsName, port, protocol, requestJson);
+                            }
                         }
                         catch (Exception rollbackEx)
                         {

@@ -751,52 +751,22 @@ namespace a10vthunder.Api
             }
         }
 
-        public void BindTemplateToVirtualService(string virtualServerName, int port, string protocol, string templateType, string templateName)
+        public void PutVirtualServerPort(string virtualServerName, int port, string protocol, string jsonBody)
         {
             try
             {
                 Logger.MethodEntry();
-                Logger.LogTrace($"Binding {templateType} template '{templateName}' to virtual server: {virtualServerName}, port: {port}, protocol: {protocol}");
-
-                var bindRequest = new VirtualServerPortUpdateRequest();
-
-                if (templateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
-                {
-                    bindRequest.Port = new VirtualServerPortUpdate
-                    {
-                        PortNumber = port,
-                        Protocol = protocol,
-                        TemplateServerSsl = templateName
-                    };
-                }
-                else if (templateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
-                {
-                    bindRequest.Port = new VirtualServerPortUpdate
-                    {
-                        PortNumber = port,
-                        Protocol = protocol,
-                        TemplateClientSsl = templateName
-                    };
-                }
-                else
-                {
-                    throw new ArgumentException($"Unsupported template type: {templateType}");
-                }
-
-                var requestJson = JsonConvert.SerializeObject(bindRequest);
-                Logger.LogTrace($"Bind request: {requestJson}");
-
-                ApiRequestString("PUT", $"/axapi/v3/slb/virtual-server/{virtualServerName}/port/{port}+{protocol}", "PUT", requestJson, false, true);
-
-                Logger.LogTrace($"Successfully bound {templateType} template '{templateName}' to virtual server {virtualServerName}");
+                Logger.LogTrace($"PUT /axapi/v3/slb/virtual-server/{virtualServerName}/port/{port}+{protocol} BODY: {jsonBody}");
+                ApiRequestString("PUT", $"/axapi/v3/slb/virtual-server/{virtualServerName}/port/{port}+{protocol}", "PUT", jsonBody, false, true);
                 Logger.MethodExit();
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In BindTemplateToVirtualService: {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Error in PutVirtualServerPort: {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
+
 
         #endregion
     }
