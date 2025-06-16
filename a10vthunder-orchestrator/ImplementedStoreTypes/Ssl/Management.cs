@@ -1,0 +1,582 @@
+﻿// Copyright 2025 Keyfactor
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Collections.Generic;
+using a10vthunder;
+using a10vthunder.Api;
+using a10vthunder.Api.Models;
+using Keyfactor.Logging;
+using Keyfactor.Orchestrators.Common.Enums;
+using Keyfactor.Orchestrators.Extensions;
+using Keyfactor.Orchestrators.Extensions.Interfaces;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
+
+namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
+{
+    public class Management : IManagementJobExtension
+    {
+        protected internal static Func<string, string> Pemify = ss =>
+            ss.Length <= 64 ? ss : ss.Substring(0, 64) + "\n" + Pemify(ss.Substring(64));
+
+        private ILogger _logger;
+
+        private readonly IPAMSecretResolver _resolver;
+
+        public Management(IPAMSecretResolver resolver)
+        {
+            _resolver = resolver;
+        }
+
+        protected internal virtual string Protocol { get; set; }
+        protected internal virtual bool AllowInvalidCert { get; set; }
+        protected internal virtual ApiClient ApiClient { get; set; }
+        protected internal virtual CertManager CertManager { get; set; }
+        protected internal virtual InventoryResult InventoryResult { get; set; }
+        protected internal virtual bool ExistingCert { get; set; }
+        protected internal virtual string CertStart { get; set; } = "-----BEGIN CERTIFICATE-----\n";
+        protected internal virtual string CertEnd { get; set; } = "\n-----END CERTIFICATE-----";
+        protected internal virtual string Alias { get; set; }
+        private string ServerPassword { get; set; }
+        private string ServerUserName { get; set; }
+        public string ExtensionName => String.Empty;
+
+        public string ResolvePamField(string name, string value)
+        {
+            _logger.LogTrace($"Attempting to resolved PAM eligible field {name}");
+            return _resolver.Resolve(value);
+        }
+
+        public JobResult ProcessJob(ManagementJobConfiguration config)
+        {
+            _logger = LogHandler.GetClassLogger<Management>();
+            _logger.MethodEntry();
+            ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+            ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
+            _logger.LogTrace($"config settings: {JsonConvert.SerializeObject(config)}");
+            dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+            _logger.LogTrace($"properties: {JsonConvert.SerializeObject(properties)}");
+            Protocol = properties?.protocol == null || string.IsNullOrEmpty(properties.protocol.Value)
+                ? "https"
+                : properties.protocol.Value;
+            AllowInvalidCert =
+                properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
+                    ? false
+                    : bool.Parse(properties.allowInvalidCert.Value);
+
+            CertManager = new CertManager();
+            _logger.LogTrace($"Ending Management Constructor Protocol is {Protocol}");
+
+            using (ApiClient = new ApiClient(ServerUserName, ServerPassword,
+                $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
+            {
+                _logger.LogTrace("Entering APIClient Using clause");
+                if (string.IsNullOrEmpty(config.JobCertificate.Alias))
+                    return new JobResult
+                    {
+                        Result = OrchestratorJobStatusJobResult.Failure,
+                        JobHistoryId = config.JobHistoryId,
+                        FailureMessage = "Management Missing Alias/Overwrite, Operation Cannot Be Completed"
+                    };
+
+                ApiClient.Logon();
+                ActivePartition activePartition = new ActivePartition
+                {
+                    curr_part_name = config.CertificateStoreDetails.StorePath
+                };
+                SetPartitionRequest partRequest = new SetPartitionRequest
+                {
+                    activepartition = activePartition
+                };
+                ApiClient.SetPartition(partRequest);
+                InventoryResult = CertManager.GetCert(ApiClient, config.JobCertificate.Alias);
+                var exactCert = InventoryResult?.InventoryList?.FirstOrDefault(c => c?.Alias?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true);
+
+                switch (config.OperationType)
+                {
+                    case CertStoreOperationType.Add:
+                        try
+                        {
+                            if (exactCert != null)
+                            {
+                                if (config.Overwrite)
+                                {
+                                    _logger.LogTrace($"Starting Replace Job for {config.JobCertificate.Alias}");
+                                    Replace(config, InventoryResult, ApiClient);
+                                    _logger.LogTrace($"Finishing Replace Job for {config.JobCertificate.Alias}");
+                                }
+                                else
+                                {
+                                    return new JobResult
+                                    {
+                                        Result = OrchestratorJobStatusJobResult.Failure,
+                                        JobHistoryId = config.JobHistoryId,
+                                        FailureMessage = "You must use the overwrite flag to replace an existing certificate."
+                                    };
+                                }
+                            }
+
+                            if (exactCert == null)
+                            {
+                                _logger.LogTrace($"Starting Add Job for {config.JobCertificate.Alias}");
+                                Add(config, ApiClient);
+                                _logger.LogTrace($"Finishing Add Job for {config.JobCertificate.Alias}");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            return new JobResult
+                            {
+                                Result = OrchestratorJobStatusJobResult.Failure,
+                                JobHistoryId = config.JobHistoryId,
+                                FailureMessage = $"Error Adding Certificate {LogHandler.FlattenException(e)}"
+                            };
+                        }
+
+                        break;
+                    case CertStoreOperationType.Remove:
+                        try
+                        {
+                            _logger.LogTrace($"Starting Remove Job for {config.JobCertificate.Alias}");
+                            Remove(config, InventoryResult, ApiClient);
+                            _logger.LogTrace($"Finishing Remove Job for {config.JobCertificate.Alias}");
+                        }
+                        catch (Exception e)
+                        {
+                            return new JobResult
+                            {
+                                Result = OrchestratorJobStatusJobResult.Failure,
+                                JobHistoryId = config.JobHistoryId,
+                                FailureMessage = $"Error Removing Certificate {LogHandler.FlattenException(e)}"
+                            };
+                        }
+
+                        break;
+                    default:
+                        return new JobResult
+                        {
+                            Result = OrchestratorJobStatusJobResult.Failure,
+                            JobHistoryId = config.JobHistoryId,
+                            FailureMessage = "Unsupported Operation, only Add, Remove and Replace are supported"
+                        };
+                }
+
+                _logger.LogTrace($"Finishing Process Job for {config.JobCertificate.Alias}");
+                return new JobResult
+                { JobHistoryId = config.JobHistoryId, Result = OrchestratorJobStatusJobResult.Success };
+            }
+        }
+
+        protected internal virtual void Replace(ManagementJobConfiguration config, InventoryResult inventoryResult,
+            ApiClient apiClient)
+        {
+            var virtualServiceBackups = new List<VirtualServiceBackup>();
+
+            try
+            {
+                _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
+
+                var assignedServerTemplates = apiClient.GetServerTemplates();
+                var serverTemplatesUsingCert = assignedServerTemplates.serverssllist?.Where(t =>
+                    t?.certificate?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                var assignedClientTemplates = apiClient.GetClientTemplates();
+                var clientTemplatesUsingCert = assignedClientTemplates?.ClientSslList
+                    .Where(t => t?.CertificateList != null &&
+                                t.CertificateList.Any(c =>
+                                    string.Equals(c.Cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+
+                bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
+                bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
+
+                // Get virtual services that use the templates
+                if (certInUseByServerTemplate || certInUseByClientTemplate)
+                {
+                    _logger.LogTrace("Certificate is in use by templates. Checking for virtual services using these templates.");
+
+                    var virtualServices = apiClient.GetVirtualServices();
+
+                    // Find virtual services using server templates
+                    if (certInUseByServerTemplate)
+                    {
+                        foreach (var template in serverTemplatesUsingCert)
+                        {
+                            var vsUsingTemplate = virtualServices?.VirtualServerList?.Where(vs =>
+                                vs?.PortList?.Any(p => p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
+
+                            if (vsUsingTemplate?.Any() == true)
+                            {
+                                foreach (var vs in vsUsingTemplate)
+                                {
+                                    var portsUsingTemplate = vs.PortList.Where(p =>
+                                        p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                                    foreach (var port in portsUsingTemplate)
+                                    {
+                                        virtualServiceBackups.Add(new VirtualServiceBackup
+                                        {
+                                            VirtualServerName = vs.Name,
+                                            Port = port.PortNumber,
+                                            Protocol = port.Protocol,
+                                            TemplateType = "server-ssl",
+                                            TemplateName = template.name,
+                                            OriginalTemplateName = port.TemplateServerSsl
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Find virtual services using client templates
+                    if (certInUseByClientTemplate)
+                    {
+                        foreach (var template in clientTemplatesUsingCert)
+                        {
+                            var vsUsingTemplate = virtualServices?.VirtualServerList?.Where(vs =>
+                                vs?.PortList?.Any(p => p?.TemplateClientSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
+
+                            if (vsUsingTemplate?.Any() == true)
+                            {
+                                foreach (var vs in vsUsingTemplate)
+                                {
+                                    var portsUsingTemplate = vs.PortList.Where(p =>
+                                        p?.TemplateClientSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                                    foreach (var port in portsUsingTemplate)
+                                    {
+                                        virtualServiceBackups.Add(new VirtualServiceBackup
+                                        {
+                                            VirtualServerName = vs.Name,
+                                            Port = port.PortNumber,
+                                            Protocol = port.Protocol,
+                                            TemplateType = "client-ssl",
+                                            TemplateName = template.Name,
+                                            OriginalTemplateName = port.TemplateClientSsl
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Step 1: Unbind templates from virtual services
+                    if (virtualServiceBackups.Any())
+                    {
+                        _logger.LogInformation($"Found {virtualServiceBackups.Count} virtual service port bindings to unbind before certificate replacement.");
+
+                        foreach (var backup in virtualServiceBackups)
+                        {
+                            _logger.LogTrace($"Unbinding {backup.TemplateType} template '{backup.TemplateName}' from virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                            apiClient.UnbindTemplateFromVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType);
+                        }
+                    }
+                }
+
+                string originalAlias = config.JobCertificate.Alias;
+
+                if (certInUseByServerTemplate || certInUseByClientTemplate)
+                {
+                    _logger.LogInformation($"Certificate {originalAlias} is currently assigned to one or more templates. Preparing to rename and re-import.");
+
+                    string newAlias = GenerateNewAlias(originalAlias);
+                    _logger.LogTrace($"Generated new alias: {newAlias}");
+                    config.JobCertificate.Alias = newAlias;
+
+                    // Step 2: Add new cert/key before updating templates
+                    Add(config, apiClient);
+
+                    // Step 3: Update all the Server templates using the old cert to now use the new one
+                    if (certInUseByServerTemplate)
+                    {
+                        foreach (var template in serverTemplatesUsingCert)
+                        {
+                            _logger.LogTrace($"Updating Server template {template.name} to use new cert/key alias {newAlias}");
+
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                Cert = newAlias,
+                                Key = newAlias
+                            };
+
+                            updateCertRequest.Certificate = updateRequest;
+                            apiClient.UpdateServerTemplates(updateCertRequest, template.name);
+                            _logger.LogInformation($"Server template {template.name} successfully updated.");
+                        }
+                    }
+
+                    // Step 4: Update all the Client templates using the old cert to now use the new one
+                    if (certInUseByClientTemplate)
+                    {
+                        foreach (var template in clientTemplatesUsingCert)
+                        {
+                            _logger.LogTrace($"Updating Client template {template.Name} to use new cert/key alias {newAlias}");
+
+                            var updateCertRequest = new UpdateTemplateRequest();
+                            var updateRequest = new UpdateTemplateCertificate
+                            {
+                                Cert = newAlias,
+                                Key = newAlias
+                            };
+
+                            updateCertRequest.Certificate = updateRequest;
+                            apiClient.UpdateClientTemplates(updateCertRequest, template.Name);
+                            _logger.LogInformation($"Client template {template.Name} successfully updated.");
+                        }
+                    }
+
+                    // Step 5: Remove the old certificate
+                    _logger.LogTrace($"Removing old certificate {originalAlias}");
+                    var tempConfig = new ManagementJobConfiguration
+                    {
+                        JobCertificate = new ManagementJobCertificate { Alias = originalAlias }
+                    };
+                    Remove(tempConfig, inventoryResult, apiClient);
+                }
+                else
+                {
+                    _logger.LogTrace($"Certificate {originalAlias} is not in use. Proceeding with removal and re-add.");
+                    Remove(config, inventoryResult, apiClient);
+                    Add(config, apiClient);
+                }
+
+                // Step 6: Re-bind templates to virtual services
+                if (virtualServiceBackups.Any())
+                {
+                    _logger.LogInformation($"Re-binding {virtualServiceBackups.Count} virtual service port bindings after certificate replacement.");
+
+                    foreach (var backup in virtualServiceBackups)
+                    {
+                        _logger.LogTrace($"Re-binding {backup.TemplateType} template '{backup.TemplateName}' to virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                        apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.TemplateName);
+                    }
+                }
+
+                apiClient.WriteMemory();
+                _logger.LogTrace($"Finished Replace method for {config.JobCertificate.Alias}");
+            }
+            catch (Exception ex)
+            {
+                // Rollback: Try to re-bind any unbound virtual services
+                if (virtualServiceBackups.Any())
+                {
+                    _logger.LogWarning("Exception occurred during certificate replacement. Attempting to rollback virtual service bindings.");
+
+                    foreach (var backup in virtualServiceBackups)
+                    {
+                        try
+                        {
+                            _logger.LogTrace($"Rolling back binding for virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                            apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.OriginalTemplateName);
+                        }
+                        catch (Exception rollbackEx)
+                        {
+                            _logger.LogError($"Failed to rollback binding for virtual service '{backup.VirtualServerName}' port {backup.Port}: {LogHandler.FlattenException(rollbackEx)}");
+                        }
+                    }
+                }
+
+                _logger.LogError($"Error in Management.Replace: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        private string GenerateNewAlias(string originalAlias)
+        {
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+
+            // Match the first Unix timestamp in the format _########## (10 digits)
+            var match = System.Text.RegularExpressions.Regex.Match(originalAlias, @"^(.*?)(_?\d{10}).*$");
+
+            string newAlias;
+
+            if (match.Success)
+            {
+                // Keep everything before the first timestamp, append new timestamp
+                newAlias = $"{match.Groups[1].Value}_{timestamp}";
+            }
+            else
+            {
+                // No timestamp found, just append new one
+                newAlias = $"{originalAlias}_{timestamp}";
+            }
+
+            // Ensure it's within the 240 character limit
+            if (newAlias.Length > 240)
+            {
+                int maxBaseLength = 240 - (timestamp.Length + 1); // +1 for underscore
+                string basePart = newAlias.Substring(0, maxBaseLength);
+                newAlias = $"{basePart}_{timestamp}";
+            }
+
+            return newAlias;
+        }
+
+        protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
+            ApiClient apiClient)
+        {
+            try
+            {
+                _logger.LogTrace($"Start Delete the {configInfo.JobCertificate.Alias} Private Key");
+                DeleteCertBaseRequest deleteKeyRoot;
+                if (inventoryResult.InventoryList[0].PrivateKeyEntry)
+                    deleteKeyRoot = new DeleteCertBaseRequest
+                    {
+                        DeleteCert = new DeleteCertRequest
+                        {
+                            CertName = configInfo.JobCertificate.Alias,
+                            PrivateKey = configInfo.JobCertificate.Alias
+                        }
+                    };
+                else
+                    deleteKeyRoot = new DeleteCertBaseRequest
+                    {
+                        DeleteCert = new DeleteCertRequest
+                        {
+                            CertName = configInfo.JobCertificate.Alias
+                        }
+                    };
+
+                apiClient.RemoveCertificate(deleteKeyRoot);
+                apiClient.WriteMemory();
+                _logger.LogTrace($"Successful Delete of the {configInfo.JobCertificate.Alias} Private Key");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in Management.Remove: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        protected internal virtual void Add(ManagementJobConfiguration configInfo, ApiClient apiClient)
+        {
+            try
+            {
+                _logger.LogTrace($"Entering Add Function for {configInfo.JobCertificate.Alias}");
+                var privateKeyString = "";
+                string certPem;
+
+                if (!string.IsNullOrEmpty(configInfo.JobCertificate.PrivateKeyPassword))
+                {
+                    _logger.LogTrace(
+                        $"Pfx Password exists getting Private Key string for {configInfo.JobCertificate.Alias}");
+                    var certData = Convert.FromBase64String(configInfo.JobCertificate.Contents);
+                    var store = new Pkcs12Store(new MemoryStream(certData),
+                        configInfo.JobCertificate.PrivateKeyPassword.ToCharArray());
+
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        using (TextWriter streamWriter = new StreamWriter(memoryStream))
+                        {
+                            var pemWriter = new PemWriter(streamWriter);
+                            _logger.LogTrace($"Getting Public Key for {configInfo.JobCertificate.Alias}");
+                            Alias = store.Aliases.Cast<string>().SingleOrDefault(a => store.IsKeyEntry(a));
+                            var publicKey = store.GetCertificate(Alias).Certificate.GetPublicKey();
+                            _logger.LogTrace($"Getting Private Key for {configInfo.JobCertificate.Alias}");
+                            var privateKey = store.GetKey(Alias).Key;
+                            var keyPair = new AsymmetricCipherKeyPair(publicKey, privateKey);
+                            _logger.LogTrace($"Writing Private Key for {configInfo.JobCertificate.Alias}");
+                            pemWriter.WriteObject(keyPair.Private);
+                            streamWriter.Flush();
+                            privateKeyString = Encoding.ASCII.GetString(memoryStream.GetBuffer()).Trim()
+                                .Replace("\r", "").Replace("\0", "");
+                            memoryStream.Close();
+                            streamWriter.Close();
+                            _logger.LogTrace($"Private Key String Retrieved for {configInfo.JobCertificate.Alias}");
+                        }
+                    }
+
+                    // Extract server certificate
+                    var beginCertificate = "-----BEGIN CERTIFICATE-----\n";
+                    var endCertificate = "\n-----END CERTIFICATE-----";
+
+                    _logger.LogTrace($"Start getting Server Certificate for {configInfo.JobCertificate.Alias}");
+                    certPem = beginCertificate +
+                              Pemify(Convert.ToBase64String(store.GetCertificate(Alias).Certificate.GetEncoded())) +
+                              endCertificate;
+                    _logger.LogTrace($"Finished getting Server Certificate for {configInfo.JobCertificate.Alias}");
+                }
+                else
+                {
+                    _logger.LogTrace($"No Private Key get Cert Pem {configInfo.JobCertificate.Alias}");
+                    certPem = CertStart + Pemify(configInfo.JobCertificate.Contents) + CertEnd;
+                }
+
+                _logger.LogTrace($"Creating Cert API Add Request for {configInfo.JobCertificate.Alias}");
+                var sslCertRequest = new SslCertificateRequest
+                {
+                    SslCertificate = new SslCert
+                    {
+                        Action = "import",
+                        CertificateType = "pem",
+                        File = configInfo.JobCertificate.Alias.Replace(".pem", ".pem"),
+                        FileHandle = configInfo.JobCertificate.Alias.Replace(".pem", ".pem")
+                    }
+                };
+
+                _logger.LogTrace($"Making API Call to Add Certificate For {configInfo.JobCertificate.Alias}");
+                apiClient.AddCertificate(sslCertRequest, certPem);
+                _logger.LogTrace($"Finished API Call to Add Certificate For {configInfo.JobCertificate.Alias}");
+
+                if (!string.IsNullOrEmpty(configInfo.JobCertificate.PrivateKeyPassword))
+                {
+                    _logger.LogTrace($"Creating Key API Add Request for {configInfo.JobCertificate.Alias}");
+                    var sslKeyRequest = new SslKeyRequest
+                    {
+                        SslKey = new SslCertKey
+                        {
+                            Action = "import",
+                            File = configInfo.JobCertificate.Alias.Replace(".pem", ".pem"),
+                            FileHandle = configInfo.JobCertificate.Alias.Replace(".pem", ".pem")
+                        }
+                    };
+
+                    _logger.LogTrace($"Making Add Key API Call for {configInfo.JobCertificate.Alias}");
+                    apiClient.AddPrivateKey(sslKeyRequest, privateKeyString);
+                    _logger.LogTrace($"Finished Add Key API Call for {configInfo.JobCertificate.Alias}");
+                }
+                apiClient.WriteMemory();
+                _logger.LogTrace($"Starting Log Off for Add {configInfo.JobCertificate.Alias}");
+                _logger.LogTrace($"Finished Log Off for Add {configInfo.JobCertificate.Alias}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in Management.Add: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+    }
+
+    // Helper class to store virtual service backup information
+    public class VirtualServiceBackup
+    {
+        public string VirtualServerName { get; set; }
+        public int Port { get; set; }
+        public string Protocol { get; set; }
+        public string TemplateType { get; set; } // "server-ssl" or "client-ssl"
+        public string TemplateName { get; set; }
+        public string OriginalTemplateName { get; set; }
+    }
+}
