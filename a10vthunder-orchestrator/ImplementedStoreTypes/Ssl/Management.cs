@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Collections.Generic;
 using a10vthunder;
 using a10vthunder.Api;
 using a10vthunder.Api.Models;
@@ -108,14 +109,14 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 };
                 ApiClient.SetPartition(partRequest);
                 InventoryResult = CertManager.GetCert(ApiClient, config.JobCertificate.Alias);
-                var exactCert = InventoryResult?.InventoryList?.FirstOrDefault(c =>c?.Alias?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true);
+                var exactCert = InventoryResult?.InventoryList?.FirstOrDefault(c => c?.Alias?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true);
 
                 switch (config.OperationType)
                 {
                     case CertStoreOperationType.Add:
                         try
                         {
-                            if (exactCert!=null)
+                            if (exactCert != null)
                             {
                                 if (config.Overwrite)
                                 {
@@ -188,25 +189,110 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
         protected internal virtual void Replace(ManagementJobConfiguration config, InventoryResult inventoryResult,
             ApiClient apiClient)
         {
+            var virtualServiceBackups = new List<VirtualServiceBackup>();
+
             try
             {
                 _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
 
                 var assignedServerTemplates = apiClient.GetServerTemplates();
-                var serverTemplatesUsingCert = assignedServerTemplates?.serverssllist?.Where(t =>
+                var serverTemplatesUsingCert = assignedServerTemplates.serverssllist?.Where(t =>
                     t?.certificate?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true).ToList();
 
                 var assignedClientTemplates = apiClient.GetClientTemplates();
-
-                var clientTemplatesUsingCert = assignedClientTemplates?.clientssllist?
-                    .Where(t => t?.certificatelist != null &&
-                                t.certificatelist.Any(c =>
-                                    c?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true))
+                var clientTemplatesUsingCert = assignedClientTemplates?.ClientSslList
+                    .Where(t => t?.CertificateList != null &&
+                                t.CertificateList.Any(c =>
+                                    string.Equals(c.Cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
 
 
                 bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
                 bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
+
+                // Get virtual services that use the templates
+                if (certInUseByServerTemplate || certInUseByClientTemplate)
+                {
+                    _logger.LogTrace("Certificate is in use by templates. Checking for virtual services using these templates.");
+
+                    var virtualServices = apiClient.GetVirtualServices();
+
+                    // Find virtual services using server templates
+                    if (certInUseByServerTemplate)
+                    {
+                        foreach (var template in serverTemplatesUsingCert)
+                        {
+                            var vsUsingTemplate = virtualServices?.VirtualServerList?.Where(vs =>
+                                vs?.PortList?.Any(p => p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
+
+                            if (vsUsingTemplate?.Any() == true)
+                            {
+                                foreach (var vs in vsUsingTemplate)
+                                {
+                                    var portsUsingTemplate = vs.PortList.Where(p =>
+                                        p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                                    foreach (var port in portsUsingTemplate)
+                                    {
+                                        virtualServiceBackups.Add(new VirtualServiceBackup
+                                        {
+                                            VirtualServerName = vs.Name,
+                                            Port = port.PortNumber,
+                                            Protocol = port.Protocol,
+                                            TemplateType = "server-ssl",
+                                            TemplateName = template.name,
+                                            OriginalTemplateName = port.TemplateServerSsl
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Find virtual services using client templates
+                    if (certInUseByClientTemplate)
+                    {
+                        foreach (var template in clientTemplatesUsingCert)
+                        {
+                            var vsUsingTemplate = virtualServices?.VirtualServerList?.Where(vs =>
+                                vs?.PortList?.Any(p => p?.TemplateClientSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
+
+                            if (vsUsingTemplate?.Any() == true)
+                            {
+                                foreach (var vs in vsUsingTemplate)
+                                {
+                                    var portsUsingTemplate = vs.PortList.Where(p =>
+                                        p?.TemplateClientSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+                                    foreach (var port in portsUsingTemplate)
+                                    {
+                                        virtualServiceBackups.Add(new VirtualServiceBackup
+                                        {
+                                            VirtualServerName = vs.Name,
+                                            Port = port.PortNumber,
+                                            Protocol = port.Protocol,
+                                            TemplateType = "client-ssl",
+                                            TemplateName = template.Name,
+                                            OriginalTemplateName = port.TemplateClientSsl
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Step 1: Unbind templates from virtual services
+                    if (virtualServiceBackups.Any())
+                    {
+                        _logger.LogInformation($"Found {virtualServiceBackups.Count} virtual service port bindings to unbind before certificate replacement.");
+
+                        foreach (var backup in virtualServiceBackups)
+                        {
+                            _logger.LogTrace($"Unbinding {backup.TemplateType} template '{backup.TemplateName}' from virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                            apiClient.UnbindTemplateFromVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType);
+                        }
+                    }
+                }
 
                 string originalAlias = config.JobCertificate.Alias;
 
@@ -214,16 +300,14 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 {
                     _logger.LogInformation($"Certificate {originalAlias} is currently assigned to one or more templates. Preparing to rename and re-import.");
 
-                    string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
                     string newAlias = GenerateNewAlias(originalAlias);
-
                     _logger.LogTrace($"Generated new alias: {newAlias}");
                     config.JobCertificate.Alias = newAlias;
 
-                    // Step 1: Add new cert/key before updating templates
+                    // Step 2: Add new cert/key before updating templates
                     Add(config, apiClient);
 
-                    // Step 2: Update all the Server templates using the old cert to now use the new one
+                    // Step 3: Update all the Server templates using the old cert to now use the new one
                     if (certInUseByServerTemplate)
                     {
                         foreach (var template in serverTemplatesUsingCert)
@@ -233,51 +317,87 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                             var updateCertRequest = new UpdateTemplateRequest();
                             var updateRequest = new UpdateTemplateCertificate
                             {
-                                cert = newAlias,
-                                key = newAlias
+                                Cert = newAlias,
+                                Key = newAlias
                             };
 
-                            updateCertRequest.certificate = updateRequest;
-
+                            updateCertRequest.Certificate = updateRequest;
                             apiClient.UpdateServerTemplates(updateCertRequest, template.name);
-
-                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                            _logger.LogInformation($"Server template {template.name} successfully updated.");
                         }
                     }
-                    
-                    // Step 2a: Update all the Client templates using the old cert to now use the new one
+
+                    // Step 4: Update all the Client templates using the old cert to now use the new one
                     if (certInUseByClientTemplate)
                     {
                         foreach (var template in clientTemplatesUsingCert)
                         {
-                            _logger.LogTrace($"Updating Client template {template.name} to use new cert/key alias {newAlias}");
+                            _logger.LogTrace($"Updating Client template {template.Name} to use new cert/key alias {newAlias}");
 
                             var updateCertRequest = new UpdateTemplateRequest();
                             var updateRequest = new UpdateTemplateCertificate
                             {
-                                cert = newAlias,
-                                key = newAlias
+                                Cert = newAlias,
+                                Key = newAlias
                             };
 
-                            updateCertRequest.certificate = updateRequest;
-
-                            apiClient.UpdateClientTemplates(updateCertRequest, template.name);
-
-                            _logger.LogInformation($"Template {template.name} successfully updated.");
+                            updateCertRequest.Certificate = updateRequest;
+                            apiClient.UpdateClientTemplates(updateCertRequest, template.Name);
+                            _logger.LogInformation($"Client template {template.Name} successfully updated.");
                         }
                     }
+
+                    // Step 5: Remove the old certificate
+                    _logger.LogTrace($"Removing old certificate {originalAlias}");
+                    var tempConfig = new ManagementJobConfiguration
+                    {
+                        JobCertificate = new ManagementJobCertificate { Alias = originalAlias }
+                    };
+                    Remove(tempConfig, inventoryResult, apiClient);
                 }
                 else
                 {
-                    _logger.LogTrace($"Certificate {originalAlias} is not in use. Proceeding with removal.");
+                    _logger.LogTrace($"Certificate {originalAlias} is not in use. Proceeding with removal and re-add.");
                     Remove(config, inventoryResult, apiClient);
                     Add(config, apiClient);
                 }
+
+                // Step 6: Re-bind templates to virtual services
+                if (virtualServiceBackups.Any())
+                {
+                    _logger.LogInformation($"Re-binding {virtualServiceBackups.Count} virtual service port bindings after certificate replacement.");
+
+                    foreach (var backup in virtualServiceBackups)
+                    {
+                        _logger.LogTrace($"Re-binding {backup.TemplateType} template '{backup.TemplateName}' to virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                        apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.TemplateName);
+                    }
+                }
+
                 apiClient.WriteMemory();
                 _logger.LogTrace($"Finished Replace method for {config.JobCertificate.Alias}");
             }
             catch (Exception ex)
             {
+                // Rollback: Try to re-bind any unbound virtual services
+                if (virtualServiceBackups.Any())
+                {
+                    _logger.LogWarning("Exception occurred during certificate replacement. Attempting to rollback virtual service bindings.");
+
+                    foreach (var backup in virtualServiceBackups)
+                    {
+                        try
+                        {
+                            _logger.LogTrace($"Rolling back binding for virtual service '{backup.VirtualServerName}' port {backup.Port}");
+                            apiClient.BindTemplateToVirtualService(backup.VirtualServerName, backup.Port, backup.Protocol, backup.TemplateType, backup.OriginalTemplateName);
+                        }
+                        catch (Exception rollbackEx)
+                        {
+                            _logger.LogError($"Failed to rollback binding for virtual service '{backup.VirtualServerName}' port {backup.Port}: {LogHandler.FlattenException(rollbackEx)}");
+                        }
+                    }
+                }
+
                 _logger.LogError($"Error in Management.Replace: {LogHandler.FlattenException(ex)}");
                 throw;
             }
@@ -313,8 +433,6 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 
             return newAlias;
         }
-
-
 
         protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
             ApiClient apiClient)
@@ -449,5 +567,16 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 throw;
             }
         }
+    }
+
+    // Helper class to store virtual service backup information
+    public class VirtualServiceBackup
+    {
+        public string VirtualServerName { get; set; }
+        public int Port { get; set; }
+        public string Protocol { get; set; }
+        public string TemplateType { get; set; } // "server-ssl" or "client-ssl"
+        public string TemplateName { get; set; }
+        public string OriginalTemplateName { get; set; }
     }
 }

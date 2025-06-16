@@ -1,122 +1,119 @@
-﻿// Copyright 2025 Keyfactor
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace a10vthunder.Api.Models
 {
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
-    public class CertificateList
+    public class CertificateListItem
     {
-        public string cert { get; set; }
-        public string key { get; set; }
-        public string uuid { get; set; }
+        [JsonProperty("cert")]
+        public string Cert { get; set; }
+
+        [JsonProperty("key")]
+        public string Key { get; set; }
+
+        [JsonProperty("uuid")]
+        public string Uuid { get; set; }
 
         [JsonProperty("a10-url")]
-        public string a10url { get; set; }
+        public string A10Url { get; set; }
     }
 
     public class ClientSslList
     {
-        public string name { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
         [JsonProperty("auth-username")]
-        public string authusername { get; set; }
+        public string AuthUsername { get; set; }
 
         [JsonProperty("local-logging")]
-        public int locallogging { get; set; }
+        public int LocalLogging { get; set; }
 
         [JsonProperty("ocsp-stapling")]
-        public int ocspstapling { get; set; }
+        public int OcspStapling { get; set; }
 
         [JsonProperty("client-certificate")]
-        public string clientcertificate { get; set; }
+        public string ClientCertificate { get; set; }
 
         [JsonProperty("close-notify")]
-        public int closenotify { get; set; }
+        public int CloseNotify { get; set; }
 
         [JsonProperty("enable-tls-alert-logging")]
-        public int enabletlsalertlogging { get; set; }
+        public int EnableTlsAlertLogging { get; set; }
 
         [JsonProperty("handshake-logging-enable")]
-        public int handshakeloggingenable { get; set; }
+        public int HandshakeLoggingEnable { get; set; }
 
         [JsonProperty("session-key-logging-enable")]
-        public int sessionkeyloggingenable { get; set; }
+        public int SessionKeyLoggingEnable { get; set; }
 
         [JsonProperty("server-name-auto-map")]
-        public int servernameautomap { get; set; }
+        public int ServerNameAutoMap { get; set; }
 
         [JsonProperty("sni-bypass-missing-cert")]
-        public int snibypassmissingcert { get; set; }
+        public int SniBypassMissingCert { get; set; }
 
         [JsonProperty("sni-bypass-expired-cert")]
-        public int snibypassexpiredcert { get; set; }
+        public int SniBypassExpiredCert { get; set; }
 
         [JsonProperty("sni-bypass-enable-log")]
-        public int snibypassenablelog { get; set; }
+        public int SniBypassEnableLog { get; set; }
 
         [JsonProperty("direct-client-server-auth")]
-        public int directclientserverauth { get; set; }
+        public int DirectClientServerAuth { get; set; }
 
         [JsonProperty("session-cache-size")]
-        public int sessioncachesize { get; set; }
+        public int SessionCacheSize { get; set; }
 
         [JsonProperty("session-cache-timeout")]
-        public int sessioncachetimeout { get; set; }
+        public int SessionCacheTimeout { get; set; }
 
         [JsonProperty("session-ticket-disable")]
-        public int sessionticketdisable { get; set; }
+        public int SessionTicketDisable { get; set; }
 
         [JsonProperty("session-ticket-lifetime")]
-        public int sessionticketlifetime { get; set; }
+        public int SessionTicketLifetime { get; set; }
 
         [JsonProperty("ssl-false-start-disable")]
-        public int sslfalsestartdisable { get; set; }
+        public int SslFalseStartDisable { get; set; }
 
         [JsonProperty("disable-sslv3")]
-        public int disablesslv3 { get; set; }
-        public int version { get; set; }
-        public int dgversion { get; set; }
+        public int DisableSslV3 { get; set; }
+
+        [JsonProperty("version")]
+        public int Version { get; set; }
+
+        [JsonProperty("dgversion")]
+        public int DgVersion { get; set; }
 
         [JsonProperty("renegotiation-disable")]
-        public int renegotiationdisable { get; set; }
-        public int authorization { get; set; }
+        public int RenegotiationDisable { get; set; }
+
+        [JsonProperty("authorization")]
+        public int Authorization { get; set; }
 
         [JsonProperty("early-data")]
-        public int earlydata { get; set; }
+        public int EarlyData { get; set; }
 
         [JsonProperty("ja3-enable")]
-        public int ja3enable { get; set; }
+        public int Ja3Enable { get; set; }
 
         [JsonProperty("ja4-enable")]
-        public int ja4enable { get; set; }
-        public string uuid { get; set; }
+        public int Ja4Enable { get; set; }
+
+        [JsonProperty("uuid")]
+        public string Uuid { get; set; }
 
         [JsonProperty("certificate-list")]
-        public List<CertificateList> certificatelist { get; set; }
+        public List<CertificateListItem> CertificateList { get; set; }
 
         [JsonProperty("a10-url")]
-        public string a10url { get; set; }
+        public string A10Url { get; set; }
     }
 
     public class ClientTemplateListResponse
     {
         [JsonProperty("client-ssl-list")]
-        public List<ClientSslList> clientssllist { get; set; }
+        public List<ClientSslList> ClientSslList { get; set; }
     }
-
-
 }

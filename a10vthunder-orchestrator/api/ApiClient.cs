@@ -378,10 +378,10 @@ namespace a10vthunder.Api
                 // 1. Upload certificate
                 var certRequest = new ManagementCertRequest
                 {
-                    certificate = new ManagementCertificate
+                    Certificate = new ManagementCertificate
                     {
-                        load = 1,
-                        fileurl = certUrl
+                        Load = 1,
+                        FileUrl = certUrl
                     }
                 };
 
@@ -391,10 +391,10 @@ namespace a10vthunder.Api
                 // 2. Upload private key
                 var keyRequest = new ManagementPrivateKeyRequest
                 {
-                    privatekey = new PrivateKey
+                    PrivateKey = new PrivateKey
                     {
-                        load = 1,
-                        fileurl = keyUrl
+                        Load = 1,
+                        FileUrl = keyUrl
                     }
                 };
 
@@ -404,9 +404,9 @@ namespace a10vthunder.Api
                 // 3. Restart secure system
                 var restartRequest = new ManagementCertRestartRequest
                 {
-                    secure = new Secure
+                    Secure = new Secure
                     {
-                        restart = 1
+                        Restart = 1
                     }
                 };
 
@@ -680,6 +680,121 @@ namespace a10vthunder.Api
             {
                 Logger.LogError($"Failed to parse API error body: {errorBody}");
                 throw new ApplicationException($"HTTP {httpStatusCode} - Unexpected API error format", ex);
+            }
+        }
+
+        // Add these methods to your ApiClient class
+
+        public VirtualServerListResponse GetVirtualServices()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", "/axapi/v3/slb/virtual-server", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var virtualServerResponse = JsonConvert.DeserializeObject<VirtualServerListResponse>(strResponse);
+                Logger.LogTrace($"virtualServerResponse: {JsonConvert.SerializeObject(virtualServerResponse)}");
+                Logger.MethodExit();
+                return virtualServerResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetVirtualServices(): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public void UnbindTemplateFromVirtualService(string virtualServerName, int port, string protocol, string templateType)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"Unbinding {templateType} template from virtual server: {virtualServerName}, port: {port}, protocol: {protocol}");
+
+                var unbindRequest = new VirtualServerPortUpdateRequest();
+
+                if (templateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
+                {
+                    unbindRequest.Port = new VirtualServerPortUpdate
+                    {
+                        PortNumber = port,
+                        Protocol = protocol,
+                        TemplateServerSsl = null // Empty string to unbind
+                    };
+                }
+                else if (templateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
+                {
+                    unbindRequest.Port = new VirtualServerPortUpdate
+                    {
+                        PortNumber = port,
+                        Protocol = protocol,
+                        TemplateClientSsl = null // Empty string to unbind
+                    };
+                }
+                else
+                {
+                    throw new ArgumentException($"Unsupported template type: {templateType}");
+                }
+
+                var requestJson = JsonConvert.SerializeObject(unbindRequest);
+                Logger.LogTrace($"Unbind request: {requestJson}");
+
+                ApiRequestString("PUT", $"/axapi/v3/slb/virtual-server/{virtualServerName}/port/{port}+{protocol}", "PUT", requestJson, false, true);
+
+                Logger.LogTrace($"Successfully unbound {templateType} template from virtual server {virtualServerName}");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UnbindTemplateFromVirtualService: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public void BindTemplateToVirtualService(string virtualServerName, int port, string protocol, string templateType, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"Binding {templateType} template '{templateName}' to virtual server: {virtualServerName}, port: {port}, protocol: {protocol}");
+
+                var bindRequest = new VirtualServerPortUpdateRequest();
+
+                if (templateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
+                {
+                    bindRequest.Port = new VirtualServerPortUpdate
+                    {
+                        PortNumber = port,
+                        Protocol = protocol,
+                        TemplateServerSsl = templateName
+                    };
+                }
+                else if (templateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
+                {
+                    bindRequest.Port = new VirtualServerPortUpdate
+                    {
+                        PortNumber = port,
+                        Protocol = protocol,
+                        TemplateClientSsl = templateName
+                    };
+                }
+                else
+                {
+                    throw new ArgumentException($"Unsupported template type: {templateType}");
+                }
+
+                var requestJson = JsonConvert.SerializeObject(bindRequest);
+                Logger.LogTrace($"Bind request: {requestJson}");
+
+                ApiRequestString("PUT", $"/axapi/v3/slb/virtual-server/{virtualServerName}/port/{port}+{protocol}", "PUT", requestJson, false, true);
+
+                Logger.LogTrace($"Successfully bound {templateType} template '{templateName}' to virtual server {virtualServerName}");
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In BindTemplateToVirtualService: {LogHandler.FlattenException(ex)}");
+                throw;
             }
         }
 
