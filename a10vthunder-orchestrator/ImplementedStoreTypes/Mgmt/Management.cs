@@ -45,6 +45,7 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
         public string ExtensionName => String.Empty;
         private string ServerPassword { get; set; }
         private string ServerUserName { get; set; }
+        private string VersionInfo { get; set; }
 
         public string ResolvePamField(string name, string value)
         {
@@ -52,6 +53,45 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
             return _resolver.Resolve(value);
         }
 
+        private string GetA10Version(ManagementJobConfiguration config, dynamic props)
+        {
+            try
+            {
+                _logger.MethodEntry();
+
+                ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+                ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
+                dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+                var Protocol = properties?.protocol == null || string.IsNullOrEmpty(properties.protocol.Value)
+                    ? "https"
+                    : properties.protocol.Value;
+                var AllowInvalidCert =
+                    properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
+                        ? false
+                        : bool.Parse(properties.allowInvalidCert.Value);
+
+                using (var apiClient = new ApiClient(ServerUserName, ServerPassword,
+                    $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
+                {
+                    apiClient.Logon();
+                    var versionResponse = apiClient.GetVersion();
+                    apiClient.LogOff();
+
+                    var versionInfo = $"Platform: {versionResponse.Version.Oper.HwPlatform}, " +
+                                     $"SW Version: {versionResponse.Version.Oper.SwVersion}, " +
+                                     $"Hostname: {versionResponse.Version.Oper.Hostname}";
+
+                    _logger.MethodExit();
+                    return versionInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to get A10 version information: {LogHandler.FlattenException(ex)}");
+                return "Version information unavailable";
+            }
+        }
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
@@ -61,6 +101,10 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
             try
             {
                 dynamic props = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+
+                // Get version information first
+                VersionInfo = GetA10Version(config, props);
+                _logger.LogInformation($"A10 Version Information: {VersionInfo}");
 
                 string host = props.OrchToScpServerIp;
                 string username = props.ScpUserName;
@@ -137,7 +181,8 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderMgmt
                 $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
                 {
                     apiClient.Logon();
-                    apiClient.ReplaceCertificateAndKey(certUrl, keyUrl);
+                    apiClient.ReplaceCertificateAndKey(certUrl, keyUrl, VersionInfo);
+                    System.Threading.Thread.Sleep(60000); //A10 won't accept new call to write memory right away
                     apiClient.WriteMemory();
                     apiClient.LogOff();
                 }

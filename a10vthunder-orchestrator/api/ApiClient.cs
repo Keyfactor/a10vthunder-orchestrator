@@ -63,7 +63,7 @@ namespace a10vthunder.Api
         {
             Logger.MethodEntry();
             var authRequest = new AuthRequest
-                {Credentials = new Credentials {Username = UserId, Password = Password}};
+            { Credentials = new Credentials { Username = UserId, Password = Password } };
             var strRequest = JsonConvert.SerializeObject(authRequest);
             try
             {
@@ -310,13 +310,13 @@ namespace a10vthunder.Api
             }
         }
 
-        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request,string templateName)
+        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request, string templateName)
         {
             try
             {
                 Logger.MethodEntry();
                 var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
-                    false, true); 
+                    false, true);
                 Logger.LogTrace($"strResponse: {strResponse}");
                 var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(strResponse);
                 Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
@@ -369,7 +369,7 @@ namespace a10vthunder.Api
             }
         }
 
-        public void ReplaceCertificateAndKey(string certUrl, string keyUrl)
+        public void ReplaceCertificateAndKey(string certUrl, string keyUrl, string versionInfo)
         {
             Logger.MethodEntry();
 
@@ -401,7 +401,6 @@ namespace a10vthunder.Api
                 Logger.LogInformation($"Uploading private key from {keyUrl}");
                 ApiRequestString("POST", "/axapi/v3/web-service/secure/private-key", "POST", JsonConvert.SerializeObject(keyRequest), false, true);
 
-                // 3. Restart secure system
                 var restartRequest = new ManagementCertRestartRequest
                 {
                     Secure = new Secure
@@ -413,7 +412,12 @@ namespace a10vthunder.Api
                 Logger.LogInformation("Restarting secure system to apply certificate and key.");
                 ApiRequestString("POST", "/axapi/v3/web-service/secure", "POST", JsonConvert.SerializeObject(restartRequest), false, true);
 
-                Logger.LogInformation("Certificate and key replaced and secure system restarted.");
+                Logger.LogInformation("Certificate and key replaced and secure.");
+            }
+            catch (WebException webEx) when (webEx.InnerException?.InnerException?.Message.Contains("ResponseEnded")==true)//Version 4 has a socket hang up error issue but it still works
+            {
+                Logger.LogInformation("Web service restart completed (connection closed as expected)");
+                // This is expected behavior when restarting the web service
             }
             catch (Exception ex)
             {
@@ -449,7 +453,7 @@ namespace a10vthunder.Api
             {
                 Logger.MethodEntry();
                 Logger.LogTrace($"baseUrl: {baseUrl} postUrl: {postUrl}");
-                var objRequest = (HttpWebRequest) WebRequest.Create(BaseUrl + postUrl);
+                var objRequest = (HttpWebRequest)WebRequest.Create(BaseUrl + postUrl);
                 Logger.MethodExit();
                 return objRequest;
             }
@@ -467,7 +471,7 @@ namespace a10vthunder.Api
             {
                 Logger.MethodEntry();
                 Logger.MethodExit();
-                return (HttpWebResponse) request.GetResponse();
+                return (HttpWebResponse)request.GetResponse();
             }
             catch (Exception ex)
             {
@@ -747,6 +751,25 @@ namespace a10vthunder.Api
             catch (Exception ex)
             {
                 Logger.LogError($"Error In UnbindTemplateFromVirtualService: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public VersionResponse GetVersion()
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("GET", "/axapi/v3/version/oper", "GET", "", false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var versionResponse = JsonConvert.DeserializeObject<VersionResponse>(strResponse);
+                Logger.LogTrace($"versionResponse: {JsonConvert.SerializeObject(versionResponse)}");
+                Logger.MethodExit();
+                return versionResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In GetVersion(): {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }

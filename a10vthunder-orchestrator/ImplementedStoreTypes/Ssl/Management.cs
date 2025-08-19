@@ -196,19 +196,21 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
 
                 var assignedServerTemplates = apiClient.GetServerTemplates();
-                var serverTemplatesUsingCert = assignedServerTemplates.serverssllist?.Where(t =>
-                    t?.certificate?.cert?.Equals(config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) == true).ToList();
+                var serverTemplatesUsingCert = assignedServerTemplates.serverssllist?
+                    .Where(t => t?.MergedCertificate != null &&
+                                string.Equals(t.MergedCertificate.cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
                 var assignedClientTemplates = apiClient.GetClientTemplates();
-                var clientTemplatesUsingCert = assignedClientTemplates?.ClientSslList
+                var clientTemplatesUsingCert = assignedClientTemplates?.ClientSslList?
                     .Where(t => t?.CertificateList != null &&
                                 t.CertificateList.Any(c =>
                                     string.Equals(c.Cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
 
-
                 bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
                 bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
+
 
                 // Get virtual services that use the templates
                 if (certInUseByServerTemplate || certInUseByClientTemplate)
