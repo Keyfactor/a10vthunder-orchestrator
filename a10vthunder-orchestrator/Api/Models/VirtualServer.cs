@@ -1,222 +1,309 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-public class VirtualServerListResponse
+namespace a10vthunder.Api.Models
 {
-    [JsonProperty("virtual-server-list")]
-    public List<VirtualServer> VirtualServerList { get; set; }
-}
+    public class VirtualServerListResponse
+    {
+        [JsonProperty("virtual-server-list")]
+        public List<VirtualServer> VirtualServerList { get; set; }
+    }
 
-public class VirtualServer
-{
-    [JsonProperty("name")]
-    public string Name { get; set; }
+    public class VirtualServer
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
-    [JsonProperty("ip-address")]
-    public string IpAddress { get; set; }
+        [JsonProperty("ip-address")]
+        public string IpAddress { get; set; }
 
-    [JsonProperty("enable-disable-action")]
-    public string EnableDisableAction { get; set; }
+        [JsonProperty("enable-disable-action")]
+        public string EnableDisableAction { get; set; }
 
-    [JsonProperty("redistribution-flagged")]
-    public int RedistributionFlagged { get; set; }
+        [JsonProperty("redistribution-flagged")]
+        public int? RedistributionFlagged { get; set; }
 
-    [JsonProperty("arp-disable")]
-    public int ArpDisable { get; set; }
+        [JsonProperty("arp-disable")]
+        public int? ArpDisable { get; set; }
 
-    [JsonProperty("stats-data-action")]
-    public string StatsDataAction { get; set; }
+        [JsonProperty("stats-data-action")]
+        public string StatsDataAction { get; set; }
 
-    [JsonProperty("extended-stats")]
-    public int ExtendedStats { get; set; }
+        [JsonProperty("extended-stats")]
+        public int? ExtendedStats { get; set; }
 
-    [JsonProperty("disable-vip-adv")]
-    public int DisableVipAdv { get; set; }
+        [JsonProperty("disable-vip-adv")]
+        public int? DisableVipAdv { get; set; }
 
-    [JsonProperty("uuid")]
-    public string Uuid { get; set; }
+        [JsonProperty("uuid")]
+        public string Uuid { get; set; }
 
-    [JsonProperty("port-list")]
-    public List<VirtualServerPort> PortList { get; set; }
+        [JsonProperty("port-list")]
+        public List<VirtualServerPort> PortList { get; set; }
 
-    [JsonProperty("a10-url")]
-    public string A10Url { get; set; }
-}
+        [JsonProperty("a10-url")]
+        public string A10Url { get; set; }
 
-public class VirtualServerPort
-{
-    [JsonProperty("port-number")]
-    public int PortNumber { get; set; }
+        // Helper methods
+        public List<VirtualServerPort> GetPortsUsingClientTemplate(string templateName)
+        {
+            if (string.IsNullOrEmpty(templateName) || PortList == null)
+                return new List<VirtualServerPort>();
 
-    [JsonProperty("protocol")]
-    public string Protocol { get; set; }
+            return PortList.Where(p =>
+                string.Equals(p.TemplateClientSsl, templateName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
 
-    [JsonProperty("range")]
-    public int Range { get; set; }
+        public List<VirtualServerPort> GetPortsUsingServerTemplate(string templateName)
+        {
+            if (string.IsNullOrEmpty(templateName) || PortList == null)
+                return new List<VirtualServerPort>();
 
-    [JsonProperty("name")]
-    public string Name { get; set; }
+            return PortList.Where(p =>
+                string.Equals(p.TemplateServerSsl, templateName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
 
-    [JsonProperty("conn-limit")]
-    public int ConnLimit { get; set; }
+    public class VirtualServerPort
+    {
+        [JsonProperty("port-number")]
+        public int? PortNumber { get; set; }
 
-    [JsonProperty("reset")]
-    public int Reset { get; set; }
+        [JsonProperty("protocol")]
+        public string Protocol { get; set; }
 
-    [JsonProperty("no-logging")]
-    public int NoLogging { get; set; }
+        [JsonProperty("range")]
+        public int? Range { get; set; }
 
-    [JsonProperty("action")]
-    public string Action { get; set; }
+        // v6 specific property
+        [JsonProperty("support-http2")]
+        public int? SupportHttp2 { get; set; }
 
-    [JsonProperty("def-selection-if-pref-failed")]
-    public string DefSelectionIfPrefFailed { get; set; }
+        // v4 has this more commonly, v6 may not always have it
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
-    [JsonProperty("skip-rev-hash")]
-    public int SkipRevHash { get; set; }
+        [JsonProperty("conn-limit")]
+        public int? ConnLimit { get; set; }
 
-    [JsonProperty("message-switching")]
-    public int MessageSwitching { get; set; }
+        [JsonProperty("reset")]
+        public int? Reset { get; set; }
 
-    [JsonProperty("force-routing-mode")]
-    public int ForceRoutingMode { get; set; }
+        [JsonProperty("no-logging")]
+        public int? NoLogging { get; set; }
 
-    [JsonProperty("reset-on-server-selection-fail")]
-    public int ResetOnServerSelectionFail { get; set; }
+        [JsonProperty("action")]
+        public string Action { get; set; }
 
-    [JsonProperty("clientip-sticky-nat")]
-    public int ClientipStickyNat { get; set; }
+        [JsonProperty("def-selection-if-pref-failed")]
+        public string DefSelectionIfPrefFailed { get; set; }
 
-    [JsonProperty("extended-stats")]
-    public int ExtendedStats { get; set; }
+        [JsonProperty("skip-rev-hash")]
+        public int? SkipRevHash { get; set; }
 
-    [JsonProperty("snat-on-vip")]
-    public int SnatOnVip { get; set; }
+        [JsonProperty("message-switching")]
+        public int? MessageSwitching { get; set; }
 
-    [JsonProperty("stats-data-action")]
-    public string StatsDataAction { get; set; }
+        [JsonProperty("force-routing-mode")]
+        public int? ForceRoutingMode { get; set; }
 
-    [JsonProperty("syn-cookie")]
-    public int SynCookie { get; set; }
+        [JsonProperty("reset-on-server-selection-fail")]
+        public int? ResetOnServerSelectionFail { get; set; }
 
-    [JsonProperty("no-auto-up-on-aflex")]
-    public int NoAutoUpOnAflex { get; set; }
+        [JsonProperty("clientip-sticky-nat")]
+        public int? ClientipStickyNat { get; set; }
 
-    [JsonProperty("scaleout-bucket-count")]
-    public int ScaleoutBucketCount { get; set; }
+        [JsonProperty("extended-stats")]
+        public int? ExtendedStats { get; set; }
 
-    [JsonProperty("auto")]
-    public int Auto { get; set; }
+        [JsonProperty("snat-on-vip")]
+        public int? SnatOnVip { get; set; }
 
-    [JsonProperty("ipinip")]
-    public int Ipinip { get; set; }
+        [JsonProperty("stats-data-action")]
+        public string StatsDataAction { get; set; }
 
-    [JsonProperty("rtp-sip-call-id-match")]
-    public int RtpSipCallIdMatch { get; set; }
+        [JsonProperty("syn-cookie")]
+        public int? SynCookie { get; set; }
 
-    [JsonProperty("use-rcv-hop-for-resp")]
-    public int UseRcvHopForResp { get; set; }
+        // v6 specific properties
+        [JsonProperty("showtech-print-extended-stats")]
+        public int? ShowtechPrintExtendedStats { get; set; }
 
-    [JsonProperty("use-rcv-hop-group")]
-    public int UseRcvHopGroup { get; set; }
+        [JsonProperty("attack-detection")]
+        public int? AttackDetection { get; set; }
 
-    [JsonProperty("template-server-ssl")]
-    public string TemplateServerSsl { get; set; }
+        [JsonProperty("no-auto-up-on-aflex")]
+        public int? NoAutoUpOnAflex { get; set; }
 
-    [JsonProperty("template-client-ssl")]
-    public string TemplateClientSsl { get; set; }
+        // v4 specific property
+        [JsonProperty("scaleout-bucket-count")]
+        public int? ScaleoutBucketCount { get; set; }
 
-    [JsonProperty("template-virtual-port")]
-    public string TemplateVirtualPort { get; set; }
+        [JsonProperty("auto")]
+        public int? Auto { get; set; }
 
-    [JsonProperty("use-default-if-no-server")]
-    public int UseDefaultIfNoServer { get; set; }
+        // v6 specific property
+        [JsonProperty("use-cgnv6")]
+        public int? UseCgnv6 { get; set; }
 
-    [JsonProperty("no-dest-nat")]
-    public int NoDestNat { get; set; }
+        [JsonProperty("ipinip")]
+        public int? Ipinip { get; set; }
 
-    [JsonProperty("cpu-compute")]
-    public int CpuCompute { get; set; }
+        [JsonProperty("rtp-sip-call-id-match")]
+        public int? RtpSipCallIdMatch { get; set; }
 
-    [JsonProperty("memory-compute")]
-    public int MemoryCompute { get; set; }
+        [JsonProperty("use-rcv-hop-for-resp")]
+        public int? UseRcvHopForResp { get; set; }
 
-    [JsonProperty("substitute-source-mac")]
-    public int SubstituteSourceMac { get; set; }
+        [JsonProperty("use-rcv-hop-group")]
+        public int? UseRcvHopGroup { get; set; }
 
-    [JsonProperty("reply-acme-challenge")]
-    public int ReplyAcmeChallenge { get; set; }
+        // v6 specific property
+        [JsonProperty("redirect-to-https")]
+        public int? RedirectToHttps { get; set; }
 
-    [JsonProperty("uuid")]
-    public string Uuid { get; set; }
+        [JsonProperty("template-server-ssl")]
+        public string TemplateServerSsl { get; set; }
 
-    [JsonProperty("a10-url")]
-    public string A10Url { get; set; }
+        [JsonProperty("template-client-ssl")]
+        public string TemplateClientSsl { get; set; }
 
-    [JsonProperty("service-group")]
-    public string ServiceGroup { get; set; }
-}
+        [JsonProperty("template-virtual-port")]
+        public string TemplateVirtualPort { get; set; }
 
-public class VirtualServerPortUpdateRequest
-{
-    [JsonProperty("port")]
-    public VirtualServerPortUpdate Port { get; set; }
-}
+        [JsonProperty("use-default-if-no-server")]
+        public int? UseDefaultIfNoServer { get; set; }
 
-public class VirtualServerPortUpdate
-{
-    [JsonProperty("port-number")]
-    public int PortNumber { get; set; }
+        [JsonProperty("no-dest-nat")]
+        public int? NoDestNat { get; set; }
 
-    [JsonProperty("protocol")]
-    public string Protocol { get; set; }
+        [JsonProperty("cpu-compute")]
+        public int? CpuCompute { get; set; }
 
-    [JsonProperty("template-server-ssl")]
-    public string TemplateServerSsl { get; set; }
+        [JsonProperty("memory-compute")]
+        public int? MemoryCompute { get; set; }
 
-    [JsonProperty("template-client-ssl")]
-    public string TemplateClientSsl { get; set; }
-}
+        [JsonProperty("substitute-source-mac")]
+        public int? SubstituteSourceMac { get; set; }
 
-// Management certificate operations classes
-public class ManagementCertRequest
-{
-    [JsonProperty("certificate")]
-    public ManagementCertificate Certificate { get; set; }
-}
+        // v6 specific properties
+        [JsonProperty("aflex-table-entry-syn-disable")]
+        public int? AflexTableEntrySynDisable { get; set; }
 
-public class ManagementCertificate
-{
-    [JsonProperty("load")]
-    public int Load { get; set; }
+        [JsonProperty("gtp-session-lb")]
+        public int? GtpSessionLb { get; set; }
 
-    [JsonProperty("file-url")]
-    public string FileUrl { get; set; }
-}
+        [JsonProperty("reply-acme-challenge")]
+        public int? ReplyAcmeChallenge { get; set; }
 
-public class ManagementPrivateKeyRequest
-{
-    [JsonProperty("private-key")]
-    public PrivateKey PrivateKey { get; set; }
-}
+        [JsonProperty("uuid")]
+        public string Uuid { get; set; }
 
-public class PrivateKey
-{
-    [JsonProperty("load")]
-    public int Load { get; set; }
+        [JsonProperty("a10-url")]
+        public string A10Url { get; set; }
 
-    [JsonProperty("file-url")]
-    public string FileUrl { get; set; }
-}
+        [JsonProperty("service-group")]
+        public string ServiceGroup { get; set; }
 
-public class ManagementCertRestartRequest
-{
-    [JsonProperty("secure")]
-    public Secure Secure { get; set; }
-}
+        // Helper methods
+        public bool UsesClientTemplate(string templateName)
+        {
+            return !string.IsNullOrEmpty(TemplateClientSsl) &&
+                   string.Equals(TemplateClientSsl, templateName, StringComparison.OrdinalIgnoreCase);
+        }
 
-public class Secure
-{
-    [JsonProperty("restart")]
-    public int Restart { get; set; }
+        public bool UsesServerTemplate(string templateName)
+        {
+            return !string.IsNullOrEmpty(TemplateServerSsl) &&
+                   string.Equals(TemplateServerSsl, templateName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public string GetPortIdentifier()
+        {
+            return $"{PortNumber}+{Protocol}";
+        }
+
+        // Check if this is v4 format
+        public bool IsV4Format()
+        {
+            return ScaleoutBucketCount.HasValue ||
+                   (!SupportHttp2.HasValue && !ShowtechPrintExtendedStats.HasValue);
+        }
+
+        // Check if this is v6 format
+        public bool IsV6Format()
+        {
+            return SupportHttp2.HasValue || ShowtechPrintExtendedStats.HasValue ||
+                   AttackDetection.HasValue || UseCgnv6.HasValue || RedirectToHttps.HasValue ||
+                   AflexTableEntrySynDisable.HasValue || GtpSessionLb.HasValue;
+        }
+    }
+
+    public class VirtualServerPortUpdateRequest
+    {
+        [JsonProperty("port")]
+        public VirtualServerPortUpdate Port { get; set; }
+    }
+
+    public class VirtualServerPortUpdate
+    {
+        [JsonProperty("port-number")]
+        public int? PortNumber { get; set; }
+
+        [JsonProperty("protocol")]
+        public string Protocol { get; set; }
+
+        [JsonProperty("template-server-ssl")]
+        public string TemplateServerSsl { get; set; }
+
+        [JsonProperty("template-client-ssl")]
+        public string TemplateClientSsl { get; set; }
+    }
+
+    // Management certificate operations classes
+    public class ManagementCertRequest
+    {
+        [JsonProperty("certificate")]
+        public ManagementCertificate Certificate { get; set; }
+    }
+
+    public class ManagementCertificate
+    {
+        [JsonProperty("load")]
+        public int? Load { get; set; }
+
+        [JsonProperty("file-url")]
+        public string FileUrl { get; set; }
+    }
+
+    public class ManagementPrivateKeyRequest
+    {
+        [JsonProperty("private-key")]
+        public PrivateKey PrivateKey { get; set; }
+    }
+
+    public class PrivateKey
+    {
+        [JsonProperty("load")]
+        public int? Load { get; set; }
+
+        [JsonProperty("file-url")]
+        public string FileUrl { get; set; }
+    }
+
+    public class ManagementCertRestartRequest
+    {
+        [JsonProperty("secure")]
+        public Secure Secure { get; set; }
+    }
+
+    public class Secure
+    {
+        [JsonProperty("restart")]
+        public int? Restart { get; set; }
+    }
 }

@@ -310,42 +310,300 @@ namespace a10vthunder.Api
             }
         }
 
-        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request, string templateName)
+        // Updated method to handle both V4 and V6 API versions
+        public UpdateServerTemplateResponse UpdateServerTemplates(UpdateTemplateRequest request, string templateName, ApiVersion version = ApiVersion.V6)
         {
             try
             {
                 Logger.MethodEntry();
-                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
-                    false, true);
+
+                string endpoint;
+                string requestBody;
+
+                if (version == ApiVersion.V6)
+                {
+                    // V6 uses the certificate sub-resource endpoint
+                    endpoint = $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate";
+                    requestBody = JsonConvert.SerializeObject(request);
+                }
+                else // V4
+                {
+                    // V4 uses the main template endpoint and different request structure
+                    endpoint = $"/axapi/v3/slb/template/server-ssl/{templateName}";
+
+                    // Convert V6 request format to V4 format
+                    var v4Request = new Dictionary<string, object>
+                    {
+                        ["server-ssl"] = new Dictionary<string, object>
+                        {
+                            ["cert"] = request.Certificate.Cert,
+                            ["key"] = request.Certificate.Key
+                        }
+                    };
+                    requestBody = JsonConvert.SerializeObject(v4Request);
+                }
+
+                var strResponse = ApiRequestString("PUT", endpoint, "PUT", requestBody, false, true);
                 Logger.LogTrace($"strResponse: {strResponse}");
-                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(strResponse);
-                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+
+                var sslTemplateResponse = ParseResponse(strResponse, version, "server-ssl");
+                Logger.LogTrace($"sslTemplateResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
                 Logger.MethodExit();
                 return sslTemplateResponse;
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Error In UpdateServerTemplates(UpdateTemplateRequest request, string templateName, ApiVersion version): {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
 
-        public UpdateClientTemplateResponse UpdateClientTemplates(UpdateTemplateRequest request, string templateName)
+        // Helper method to parse responses based on API version
+        private UpdateServerTemplateResponse ParseResponse(string responseJson, ApiVersion version,string responseType)
+        {
+            if (version == ApiVersion.V6)
+            {
+                // V6 response structure
+                return JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(responseJson);
+            }
+            else // V4
+            {
+                // V4 has a different response structure - extract what we need
+                var v4Response = JsonConvert.DeserializeObject<dynamic>(responseJson);
+                var clientSsl = v4Response[responseType];
+
+                return new UpdateServerTemplateResponse
+                {
+                    certificate = new UpdateTemplateResposneCertificate
+                    {
+                        cert = clientSsl.cert,
+                        key = clientSsl.key,
+                        uuid = clientSsl.uuid,
+                        a10url = clientSsl["a10-url"]
+                    }
+                };
+            }
+        }
+
+        // Enum to specify API version
+        public enum ApiVersion
+        {
+            V4,
+            V6
+        }
+
+        // Alternative approach: Separate methods for each version
+        public UpdateServerTemplateResponse UpdateServerTemplatesV6(UpdateTemplateRequest request, string templateName)
         {
             try
             {
                 Logger.MethodEntry();
-                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}/certificate", "PUT", JsonConvert.SerializeObject(request),
-                    false, true);
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/server-ssl/{templateName}/certificate", "PUT",
+                    JsonConvert.SerializeObject(request), false, true);
                 Logger.LogTrace($"strResponse: {strResponse}");
-                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateClientTemplateResponse>(strResponse);
-                Logger.LogTrace($"sslColResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                var sslTemplateResponse = JsonConvert.DeserializeObject<UpdateServerTemplateResponse>(strResponse);
+                Logger.LogTrace($"sslTemplateResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
                 Logger.MethodExit();
                 return sslTemplateResponse;
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error In UpdateTemplates(UpdateTemplateRequest request,string templateName): {LogHandler.FlattenException(ex)}");
+                Logger.LogError($"Error In UpdateServerTemplatesV6: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateServerTemplateResponse UpdateServerTemplatesV4(UpdateTemplateRequest request, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+
+                // Convert to V4 request format
+                var v4Request = new
+                {
+                    client_ssl = new
+                    {
+                        name = templateName,
+                        cert = request.Certificate.Cert,
+                        key = request.Certificate.Key
+                    }
+                };
+
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}", "PUT",
+                    JsonConvert.SerializeObject(v4Request), false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+
+                // Parse V4 response and convert to our standard response format
+                var v4Response = JsonConvert.DeserializeObject<dynamic>(strResponse);
+                var clientSsl = v4Response["client-ssl"];
+
+                var sslTemplateResponse = new UpdateServerTemplateResponse
+                {
+                    certificate = new UpdateTemplateResposneCertificate
+                    {
+                        cert = clientSsl.cert,
+                        key = clientSsl.key,
+                        uuid = clientSsl.uuid,
+                        a10url = clientSsl["a10-url"]
+                    }
+                };
+
+                Logger.LogTrace($"sslTemplateResponse: {JsonConvert.SerializeObject(sslTemplateResponse)}");
+                Logger.MethodExit();
+                return sslTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateServerTemplatesV4: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        // Updated method to handle both V4 and V6 API versions for client templates
+        public UpdateClientTemplateResponse UpdateClientTemplates(UpdateTemplateRequest request, string templateName, ApiVersion version = ApiVersion.V6)
+        {
+            try
+            {
+                Logger.MethodEntry();
+
+                string endpoint;
+                string requestBody;
+
+                if (version == ApiVersion.V6)
+                {
+                    // V6 uses the certificate sub-resource endpoint
+                    endpoint = $"/axapi/v3/slb/template/client-ssl/{templateName}/certificate";
+                    requestBody = JsonConvert.SerializeObject(request);
+                }
+                else // V4
+                {
+                    // V4 uses the main template endpoint and different request structure
+                    endpoint = $"/axapi/v3/slb/template/client-ssl/{templateName}";
+
+                    // Convert V6 request format to V4 format
+                    var v4Request = new Dictionary<string, object>
+                    {
+                        ["client-ssl"] = new Dictionary<string, object>
+                        {
+                            ["cert"] = request.Certificate.Cert,
+                            ["key"] = request.Certificate.Key
+                        }
+                    };
+                    requestBody = JsonConvert.SerializeObject(v4Request);
+                }
+
+                var strResponse = ApiRequestString("PUT", endpoint, "PUT", requestBody, false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+
+                var clientTemplateResponse = ParseClientResponse(strResponse, version);
+                Logger.LogTrace($"clientTemplateResponse: {JsonConvert.SerializeObject(clientTemplateResponse)}");
+                Logger.MethodExit();
+                return clientTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateClientTemplates(UpdateTemplateRequest request, string templateName, ApiVersion version): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        // Helper method to parse client template responses based on API version
+        private UpdateClientTemplateResponse ParseClientResponse(string responseJson, ApiVersion version)
+        {
+            if (version == ApiVersion.V6)
+            {
+                // V6 response structure - already matches our model
+                return JsonConvert.DeserializeObject<UpdateClientTemplateResponse>(responseJson);
+            }
+            else // V4
+            {
+                // V4 has a different response structure - convert to V6 format
+                var v4Response = JsonConvert.DeserializeObject<dynamic>(responseJson);
+                var clientSsl = v4Response["client-ssl"];
+
+                return new UpdateClientTemplateResponse
+                {
+                    certificatelist = new List<CleintCertificateList>
+            {
+                new CleintCertificateList
+                {
+                    cert = clientSsl.cert,
+                    key = clientSsl.key,
+                    uuid = clientSsl.uuid,
+                    a10url = clientSsl["a10-url"]
+                }
+            }
+                };
+            }
+        }
+
+        // Alternative approach: Separate methods for each version
+        public UpdateClientTemplateResponse UpdateClientTemplatesV6(UpdateTemplateRequest request, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}/certificate", "PUT",
+                    JsonConvert.SerializeObject(request), false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+                var clientTemplateResponse = JsonConvert.DeserializeObject<UpdateClientTemplateResponse>(strResponse);
+                Logger.LogTrace($"clientTemplateResponse: {JsonConvert.SerializeObject(clientTemplateResponse)}");
+                Logger.MethodExit();
+                return clientTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateClientTemplatesV6: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public UpdateClientTemplateResponse UpdateClientTemplatesV4(UpdateTemplateRequest request, string templateName)
+        {
+            try
+            {
+                Logger.MethodEntry();
+
+                // Convert to V4 request format
+                var v4Request = new
+                {
+                    client_ssl = new
+                    {
+                        cert = request.Certificate.Cert,
+                        key = request.Certificate.Key
+                    }
+                };
+
+                var strResponse = ApiRequestString("PUT", $"/axapi/v3/slb/template/client-ssl/{templateName}", "PUT",
+                    JsonConvert.SerializeObject(v4Request), false, true);
+                Logger.LogTrace($"strResponse: {strResponse}");
+
+                // Parse V4 response and convert to our standard response format
+                var v4Response = JsonConvert.DeserializeObject<dynamic>(strResponse);
+                var clientSsl = v4Response["client-ssl"];
+
+                var clientTemplateResponse = new UpdateClientTemplateResponse
+                {
+                    certificatelist = new List<CleintCertificateList>
+            {
+                new CleintCertificateList
+                {
+                    cert = clientSsl.cert,
+                    key = clientSsl.key,
+                    uuid = clientSsl.uuid,
+                    a10url = clientSsl["a10-url"]
+                }
+            }
+                };
+
+                Logger.LogTrace($"clientTemplateResponse: {JsonConvert.SerializeObject(clientTemplateResponse)}");
+                Logger.MethodExit();
+                return clientTemplateResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error In UpdateClientTemplatesV4: {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
@@ -443,6 +701,24 @@ namespace a10vthunder.Api
             {
                 Logger.LogError(
                     $"Error In RemoveCertificate(DeleteCertBaseRequest deleteCertRoot): {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+        public void RemovePrivateKey(DeleteCertBaseRequest deleteKeyRoot)
+        {
+            try
+            {
+                Logger.MethodEntry();
+                Logger.LogTrace($"deleteKeyRoot: {JsonConvert.SerializeObject(deleteKeyRoot)}");
+                ApiRequestString("POST", "/axapi/v3/pki/delete", "POST", JsonConvert.SerializeObject(deleteKeyRoot),
+                    false, true);
+                Logger.MethodExit();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    $"Error In RemovePrivateKey(DeleteCertBaseRequest deleteKeyRoot): {LogHandler.FlattenException(ex)}");
                 throw;
             }
         }
@@ -708,7 +984,7 @@ namespace a10vthunder.Api
             }
         }
 
-        public void UnbindTemplateFromVirtualService(string virtualServerName, int port, string protocol, string templateType)
+        public void UnbindTemplateFromVirtualService(string virtualServerName, int? port, string protocol, string templateType)
         {
             try
             {
@@ -774,7 +1050,7 @@ namespace a10vthunder.Api
             }
         }
 
-        public void PutVirtualServerPort(string virtualServerName, int port, string protocol, string jsonBody)
+        public void PutVirtualServerPort(string virtualServerName, int? port, string protocol, string jsonBody)
         {
             try
             {

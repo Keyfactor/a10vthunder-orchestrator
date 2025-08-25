@@ -1,16 +1,5 @@
 ﻿// Copyright 2025 Keyfactor
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Licensed under the Apache License, Version 2.0
 
 using System;
 using System.IO;
@@ -29,6 +18,7 @@ using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
+using static a10vthunder.Api.ApiClient;
 
 namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 {
@@ -38,8 +28,9 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
             ss.Length <= 64 ? ss : ss.Substring(0, 64) + "\n" + Pemify(ss.Substring(64));
 
         private ILogger _logger;
-
         private readonly IPAMSecretResolver _resolver;
+        private string VersionInfo { get; set; }
+        private ApiVersion ApiVersionDetected { get; set; } = ApiVersion.V6; // Default to V6
 
         public Management(IPAMSecretResolver resolver)
         {
@@ -65,6 +56,65 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
             return _resolver.Resolve(value);
         }
 
+        private ApiVersion GetApiVersion(ManagementJobConfiguration config)
+        {
+            try
+            {
+                _logger.MethodEntry();
+
+                ServerPassword = ResolvePamField("ServerPassword", config.ServerPassword);
+                ServerUserName = ResolvePamField("ServerUserName", config.ServerUsername);
+
+                dynamic properties = JsonConvert.DeserializeObject(config.CertificateStoreDetails.Properties);
+                var Protocol = properties?.protocol == null || string.IsNullOrEmpty(properties.protocol.Value)
+                    ? "https"
+                    : properties.protocol.Value;
+                var AllowInvalidCert =
+                    properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
+                        ? false
+                        : bool.Parse(properties.allowInvalidCert.Value);
+
+                using (var apiClient = new ApiClient(ServerUserName, ServerPassword,
+                    $"{Protocol}://{config.CertificateStoreDetails.ClientMachine.Trim()}", AllowInvalidCert))
+                {
+                    apiClient.Logon();
+                    var versionResponse = apiClient.GetVersion();
+                    apiClient.LogOff();
+
+                    VersionInfo = $"Platform: {versionResponse.Version.Oper.HwPlatform}, " +
+                                 $"SW Version: {versionResponse.Version.Oper.SwVersion}, " +
+                                 $"Hostname: {versionResponse.Version.Oper.Hostname}";
+
+                    // Determine API version based on software version
+                    // Adjust this logic based on your specific version detection needs
+                    var swVersion = versionResponse.Version.Oper.SwVersion;
+
+                    // Example: if version starts with "4." use V4, otherwise use V6
+                    // Update this logic based on how you differentiate between API versions
+                    if (swVersion != null && swVersion.StartsWith("4."))
+                    {
+                        _logger.LogInformation($"Detected A10 API Version 4 based on SW Version: {swVersion}");
+                        return ApiVersion.V4;
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"Using A10 API Version 6 (default) for SW Version: {swVersion}");
+                        return ApiVersion.V6;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to get A10 version information, defaulting to API V6: {LogHandler.FlattenException(ex)}");
+                VersionInfo = "Version information unavailable";
+                return ApiVersion.V6; // Default to V6 on error
+            }
+            finally
+            {
+                _logger.MethodExit();
+            }
+        }
+
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
             _logger = LogHandler.GetClassLogger<Management>();
@@ -82,6 +132,11 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 properties?.allowInvalidCert == null || string.IsNullOrEmpty(properties.allowInvalidCert.Value)
                     ? false
                     : bool.Parse(properties.allowInvalidCert.Value);
+
+            // Detect API version first
+            ApiVersionDetected = GetApiVersion(config);
+            _logger.LogInformation($"A10 Version Information: {VersionInfo}");
+            _logger.LogInformation($"Using API Version: {ApiVersionDetected}");
 
             CertManager = new CertManager();
             _logger.LogTrace($"Ending Management Constructor Protocol is {Protocol}");
@@ -195,22 +250,22 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
             {
                 _logger.LogTrace($"Starting Replace method for {config.JobCertificate.Alias}");
 
+                // Get server templates using the new model
                 var assignedServerTemplates = apiClient.GetServerTemplates();
-                var serverTemplatesUsingCert = assignedServerTemplates.serverssllist?
-                    .Where(t => t?.MergedCertificate != null &&
-                                string.Equals(t.MergedCertificate.cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase))
+                var serverTemplatesUsingCert = assignedServerTemplates.ServerSslList?
+                    .Where(t => t != null &&
+                                (string.Equals(t.GetCertificate(), config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(t.Name, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
 
+                // Get client templates using the new model
                 var assignedClientTemplates = apiClient.GetClientTemplates();
                 var clientTemplatesUsingCert = assignedClientTemplates?.ClientSslList?
-                    .Where(t => t?.CertificateList != null &&
-                                t.CertificateList.Any(c =>
-                                    string.Equals(c.Cert, config.JobCertificate.Alias, StringComparison.OrdinalIgnoreCase)))
+                    .Where(t => t != null && t.UsesCertificate(config.JobCertificate.Alias))
                     .ToList();
 
                 bool certInUseByServerTemplate = serverTemplatesUsingCert?.Any() == true;
                 bool certInUseByClientTemplate = clientTemplatesUsingCert?.Any() == true;
-
 
                 // Get virtual services that use the templates
                 if (certInUseByServerTemplate || certInUseByClientTemplate)
@@ -224,15 +279,16 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                     {
                         foreach (var template in serverTemplatesUsingCert)
                         {
+                            // Updated to use VirtualServerList property name
                             var vsUsingTemplate = virtualServices?.VirtualServerList?.Where(vs =>
-                                vs?.PortList?.Any(p => p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
+                                vs?.PortList?.Any(p => p?.TemplateServerSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true) == true).ToList();
 
                             if (vsUsingTemplate?.Any() == true)
                             {
                                 foreach (var vs in vsUsingTemplate)
                                 {
                                     var portsUsingTemplate = vs.PortList.Where(p =>
-                                        p?.TemplateServerSsl?.Equals(template.name, StringComparison.OrdinalIgnoreCase) == true).ToList();
+                                        p?.TemplateServerSsl?.Equals(template.Name, StringComparison.OrdinalIgnoreCase) == true).ToList();
 
                                     foreach (var port in portsUsingTemplate)
                                     {
@@ -242,7 +298,7 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                                             Port = port.PortNumber,
                                             Protocol = port.Protocol,
                                             TemplateType = "server-ssl",
-                                            TemplateName = template.name,
+                                            TemplateName = template.Name,
                                             OriginalTemplateName = port.TemplateServerSsl
                                         });
                                     }
@@ -314,18 +370,21 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                     {
                         foreach (var template in serverTemplatesUsingCert)
                         {
-                            _logger.LogTrace($"Updating Server template {template.name} to use new cert/key alias {newAlias}");
+                            _logger.LogTrace($"Updating Server template {template.Name} to use new cert/key alias {newAlias}");
 
+                            // Use UpdateTemplateRequest for both v4 and v6 formats with version detection
                             var updateCertRequest = new UpdateTemplateRequest();
                             var updateRequest = new UpdateTemplateCertificate
                             {
                                 Cert = newAlias,
                                 Key = newAlias
                             };
-
                             updateCertRequest.Certificate = updateRequest;
-                            apiClient.UpdateServerTemplates(updateCertRequest, template.name);
-                            _logger.LogInformation($"Server template {template.name} successfully updated.");
+
+                            // Use the unified method with detected API version
+                            apiClient.UpdateServerTemplates(updateCertRequest, template.Name, ApiVersionDetected);
+
+                            _logger.LogInformation($"Server template {template.Name} successfully updated.");
                         }
                     }
 
@@ -336,6 +395,7 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                         {
                             _logger.LogTrace($"Updating Client template {template.Name} to use new cert/key alias {newAlias}");
 
+                            // Update the client template to use the new certificate
                             var updateCertRequest = new UpdateTemplateRequest();
                             var updateRequest = new UpdateTemplateCertificate
                             {
@@ -344,7 +404,9 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                             };
 
                             updateCertRequest.Certificate = updateRequest;
-                            apiClient.UpdateClientTemplates(updateCertRequest, template.Name);
+
+                            // Use the unified method with detected API version
+                            apiClient.UpdateClientTemplates(updateCertRequest, template.Name, ApiVersionDetected);
                             _logger.LogInformation($"Client template {template.Name} successfully updated.");
                         }
                     }
@@ -403,7 +465,6 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
 
                         apiClient.PutVirtualServerPort(vsName, port, protocol, requestJson);
                     }
-
                 }
 
                 apiClient.WriteMemory();
@@ -416,49 +477,45 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
                 {
                     _logger.LogWarning("Exception occurred during certificate replacement. Attempting to rollback virtual service bindings.");
 
-                    foreach (var backup in virtualServiceBackups)
+                    // Group backups by virtual server + port + protocol for rollback
+                    var portBindings = virtualServiceBackups
+                        .GroupBy(b => new { b.VirtualServerName, b.Port, b.Protocol })
+                        .ToList();
+
+                    // For each unique port, build a single rollback update with both template bindings
+                    foreach (var bindingGroup in portBindings)
                     {
                         try
                         {
-                            _logger.LogTrace($"Rolling back binding for virtual service '{backup.VirtualServerName}' port {backup.Port}");
-                            // 1. Group backups by virtual server + port + protocol
-                            var portBindings = virtualServiceBackups
-                                .GroupBy(b => new { b.VirtualServerName, b.Port, b.Protocol })
-                                .ToList();
+                            var vsName = bindingGroup.Key.VirtualServerName;
+                            var port = bindingGroup.Key.Port;
+                            var protocol = bindingGroup.Key.Protocol;
 
-                            // 2. For each unique port, build a single update with both template bindings
-                            foreach (var bindingGroup in portBindings)
+                            var update = new VirtualServerPortUpdate
                             {
-                                var vsName = bindingGroup.Key.VirtualServerName;
-                                var port = bindingGroup.Key.Port;
-                                var protocol = bindingGroup.Key.Protocol;
+                                PortNumber = port,
+                                Protocol = protocol
+                            };
 
-                                var update = new VirtualServerPortUpdate
-                                {
-                                    PortNumber = port,
-                                    Protocol = protocol
-                                };
-
-                                foreach (var b in bindingGroup)
-                                {
-                                    if (b.TemplateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
-                                        update.TemplateServerSsl = b.TemplateName;
-                                    else if (b.TemplateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
-                                        update.TemplateClientSsl = b.TemplateName;
-                                    else
-                                        throw new ArgumentException($"Unknown template type: {b.TemplateType}");
-                                }
-
-                                var bindRequest = new VirtualServerPortUpdateRequest { Port = update };
-                                var requestJson = JsonConvert.SerializeObject(bindRequest);
-                                _logger.LogTrace($"Re-binding templates to VS={vsName} Port={port} Protocol={protocol} => {requestJson}");
-
-                                apiClient.PutVirtualServerPort(vsName, port, protocol, requestJson);
+                            foreach (var b in bindingGroup)
+                            {
+                                if (b.TemplateType.Equals("server-ssl", StringComparison.OrdinalIgnoreCase))
+                                    update.TemplateServerSsl = b.OriginalTemplateName;
+                                else if (b.TemplateType.Equals("client-ssl", StringComparison.OrdinalIgnoreCase))
+                                    update.TemplateClientSsl = b.OriginalTemplateName;
+                                else
+                                    throw new ArgumentException($"Unknown template type: {b.TemplateType}");
                             }
+
+                            var bindRequest = new VirtualServerPortUpdateRequest { Port = update };
+                            var requestJson = JsonConvert.SerializeObject(bindRequest);
+                            _logger.LogTrace($"Rolling back templates to VS={vsName} Port={port} Protocol={protocol} => {requestJson}");
+
+                            apiClient.PutVirtualServerPort(vsName, port, protocol, requestJson);
                         }
                         catch (Exception rollbackEx)
                         {
-                            _logger.LogError($"Failed to rollback binding for virtual service '{backup.VirtualServerName}' port {backup.Port}: {LogHandler.FlattenException(rollbackEx)}");
+                            _logger.LogError($"Failed to rollback binding for virtual service port {bindingGroup.Key.Port}: {LogHandler.FlattenException(rollbackEx)}");
                         }
                     }
                 }
@@ -499,34 +556,43 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
             return newAlias;
         }
 
+        // Rest of the methods (Remove, Add) remain the same as they don't use the template update APIs
         protected internal virtual void Remove(ManagementJobConfiguration configInfo, InventoryResult inventoryResult,
             ApiClient apiClient)
         {
             try
             {
-                _logger.LogTrace($"Start Delete the {configInfo.JobCertificate.Alias} Private Key");
-                DeleteCertBaseRequest deleteKeyRoot;
-                if (inventoryResult.InventoryList[0].PrivateKeyEntry)
-                    deleteKeyRoot = new DeleteCertBaseRequest
+                _logger.LogTrace($"Start Delete the {configInfo.JobCertificate.Alias} Certificate and Private Key");
+
+                // First call: Delete the certificate
+                var deleteCertRoot = new DeleteCertBaseRequest
+                {
+                    Delete = new DeleteCertRequest
                     {
-                        DeleteCert = new DeleteCertRequest
+                        CertName = configInfo.JobCertificate.Alias
+                    }
+                };
+
+                apiClient.RemoveCertificate(deleteCertRoot);
+                _logger.LogTrace($"Successfully deleted certificate: {configInfo.JobCertificate.Alias}");
+
+                // Second call: Delete the private key (if it exists)
+                if (inventoryResult.InventoryList[0].PrivateKeyEntry)
+                {
+                    var deleteKeyRoot = new DeleteCertBaseRequest
+                    {
+                        Delete = new DeleteCertRequest
                         {
-                            CertName = configInfo.JobCertificate.Alias,
                             PrivateKey = configInfo.JobCertificate.Alias
                         }
                     };
-                else
-                    deleteKeyRoot = new DeleteCertBaseRequest
-                    {
-                        DeleteCert = new DeleteCertRequest
-                        {
-                            CertName = configInfo.JobCertificate.Alias
-                        }
-                    };
 
-                apiClient.RemoveCertificate(deleteKeyRoot);
+                    apiClient.RemovePrivateKey(deleteKeyRoot);
+                    _logger.LogTrace($"Successfully deleted private key: {configInfo.JobCertificate.Alias}");
+                }
+
                 apiClient.WriteMemory();
-                _logger.LogTrace($"Successful Delete of the {configInfo.JobCertificate.Alias} Private Key");
+                _logger.LogTrace($"Successful Delete of the {configInfo.JobCertificate.Alias} Certificate and Private Key");
             }
             catch (Exception ex)
             {
@@ -634,11 +700,12 @@ namespace Keyfactor.Extensions.Orchestrator.A10vThunder.ThunderSsl
         }
     }
 
+
     // Helper class to store virtual service backup information
     public class VirtualServiceBackup
     {
         public string VirtualServerName { get; set; }
-        public int Port { get; set; }
+        public int? Port { get; set; }
         public string Protocol { get; set; }
         public string TemplateType { get; set; } // "server-ssl" or "client-ssl"
         public string TemplateName { get; set; }

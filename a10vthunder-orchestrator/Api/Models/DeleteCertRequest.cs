@@ -11,17 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 using Newtonsoft.Json;
-
 namespace a10vthunder.Api.Models
 {
     public class DeleteCertRequest
     {
-        [JsonProperty("cert-name")]
+        [JsonProperty("cert-name", NullValueHandling = NullValueHandling.Ignore)]
         public string CertName { get; set; }
 
-        [JsonProperty("private-key",NullValueHandling=NullValueHandling.Ignore)]
+        [JsonProperty("private-key", NullValueHandling = NullValueHandling.Ignore)]
         public string PrivateKey { get; set; }
     }
 }
