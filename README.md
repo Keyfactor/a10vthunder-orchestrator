@@ -53,9 +53,9 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
 
 ## Support
-The a10vThunder Universal Orchestrator extension If you have a support issue, please open a support ticket by either contacting your Keyfactor representative or via the Keyfactor Support Portal at https://support.keyfactor.com.
+The a10vThunder Universal Orchestrator extension is supported by Keyfactor. If you require support for any issues or have feature request, please open a support ticket by either contacting your Keyfactor representative or via the Keyfactor Support Portal at https://support.keyfactor.com.
 
-> To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
+> If you want to contribute bug fixes or additional enhancements, use the **[Pull requests](../../pulls)** tab.
 
 ## Requirements & Prerequisites
 
@@ -514,8 +514,8 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 
     Click the Add button to add a new Certificate Store. Use the table below to populate the **Attributes** in the **Add** form.
 
-   | Attribute | Description |
-   | --------- | ----------- |
+   | Attribute | Description                                             |
+   | --------- |---------------------------------------------------------|
    | Category | Select "A10 Thunder Ssl Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine |  |
@@ -607,8 +607,8 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
     Click the Add button to add a new Certificate Store. Use the table below to populate the **Attributes** in the **Add** form.
 
-   | Attribute | Description |
-   | --------- | ----------- |
+   | Attribute | Description                                             |
+   | --------- |---------------------------------------------------------|
    | Category | Select "A10 Thunder Management Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine |  |
