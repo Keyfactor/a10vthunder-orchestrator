@@ -219,7 +219,7 @@ the Keyfactor Command Portal
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
-   | Supports Custom Alias | Forbidden | Determines if an individual entry within a store can have a custom Alias. |
+   | Supports Custom Alias | Required | Determines if an individual entry within a store can have a custom Alias. |
    | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
 
@@ -411,7 +411,7 @@ the Keyfactor Command Portal
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
-   | Supports Custom Alias | Forbidden | Determines if an individual entry within a store can have a custom Alias. |
+   | Supports Custom Alias | Required | Determines if an individual entry within a store can have a custom Alias. |
    | Private Key Handling | Required | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
 
