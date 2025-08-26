@@ -90,21 +90,60 @@ It may be possible to use the A10 device itself as the SCP target location if it
 
 ---
 
+#### ThunderMgmt Aliases
+
+In the ThunderMgmt store type, the **alias** determines the filename for certificates stored on the SCP server:
+
+- **Certificate File**: `{alias}.crt` on the SCP server
+- **Private Key File**: `{alias}.key` on the SCP server  
+- **A10 API Reference**: The A10 management interface loads certificates using SCP URLs pointing to these files
+
+##### Example ThunderMgmt Usage
+```
+Alias: "mgmt-interface-cert"
+→ SCP Server Files: 
+  - /home/scpuser/mgmt-interface-cert.crt
+  - /home/scpuser/mgmt-interface-cert.key
+→ A10 API Call: 
+  - Certificate URL: scp://scpuser:pass@192.168.1.100:/home/scpuser/mgmt-interface-cert.crt
+  - Key URL: scp://scpuser:pass@192.168.1.100:/home/scpuser/mgmt-interface-cert.key
+```
+##### For Alias Names  
+- Use names that clearly identify the management purpose: `mgmt-interface-2025`
+- Ensure filenames are valid for both SCP server filesystem and A10 API calls
+- Consider including renewal dates: `mgmt-cert-jan2025`
+
+##### ThunderMgmt File Management
+
+The orchestrator handles file operations as follows:
+
+1. **Add Operation**: 
+   - Uploads `{alias}.crt` and `{alias}.key` to SCP server
+   - Calls A10 API to load certificate from SCP URLs
+   - A10 device pulls files directly from SCP server
+
+2. **Remove Operation**:
+   - Deletes `{alias}.crt` and `{alias}.key` from SCP server
+   - Does not modify A10 management interface configuration
+
+3. **Replace Operation** (with Overwrite=true):
+   - Overwrites existing `{alias}.crt` and `{alias}.key` files
+   - Calls A10 API to reload certificate from same SCP URLs
+  
+##### Character Limitations
+- **Maximum Length**: 240 characters (enforced by orchestrator)
+- **Recommended Characters**: Letters, numbers, hyphens, underscores
+- **Avoid**: Special characters that might cause issues in API calls or file operations
+  
+##### ThunderMgmt Common Issues  
+- **File Path Issues**: Ensure SCP user has access to the target directory
+- **Invalid Filenames**: Some characters may not be valid for filesystem operations
+- **URL Encoding**: Special characters in aliases may require URL encoding in SCP URLs
+
 #### ✅ Summary
 
 This extension coordinates certificate and private key delivery by using SCP as a bridge between orchestrator logic and A10's strict API requirements. It ensures secure and automated deployment for the management interface certificates with minimal manual intervention.
 
 
-## Certificate Store Configuration
 
-### ⚙️ Configuration Fields
-
-| Name              | Display Name                  | Description                                                  | Type   | Required |
-|-------------------|-------------------------------|--------------------------------------------------------------|--------|----------|
-| OrchToScpServerIp | Orch To Scp Server IP         | IP from the orchestrator to the SCP Linux server             | String | ✅        |
-| ScpPort           | Port Used For SCP             | Port used to connect to the SCP server                       | String | ✅        |
-| ScpUserName       | Username Used For SCP         | Username for SCP access on the Linux server                  | Secret | ✅        |
-| ScpPassword       | Password Used For SCP         | Password for SCP access on the Linux server                  | Secret | ✅        |
-| A10ToScpServerIp  | A10 Device To SCP Server IP   | IP used by the A10 device to reach the SCP server (can be private) | String | ✅   |
-| allowInvalidCert  | Allow Invalid Cert on A10 API | If true, allows self-signed/untrusted certs for A10 API access | Bool   | ✅ (default: true) |
 
