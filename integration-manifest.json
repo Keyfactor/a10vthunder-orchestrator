@@ -66,7 +66,7 @@
 "ServerRequired": true,
 "PowerShell": false,
 "BlueprintAllowed": false,
-"CustomAliasAllowed": "Forbidden"
+"CustomAliasAllowed": "Required"
 },
 {
 "Name": "A10 Thunder Management Certificates",
@@ -141,7 +141,7 @@
 "ServerRequired": true,
 "PowerShell": false,
 "BlueprintAllowed": false,
-"CustomAliasAllowed": "Forbidden"
+"CustomAliasAllowed": "Required"
 }
 ]
 }
