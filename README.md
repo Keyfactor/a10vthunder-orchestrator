@@ -47,7 +47,7 @@ The A10 vThunder Orchestrator provides automated certificate lifecycle managemen
 - **Certificate Inventory**: Comprehensive discovery and inventory of existing certificates
 - **Management Interface Certificates**: SCP-based deployment for A10 management interface certificates
 - **PAM Integration**: Support for Privileged Access Management systems
-- **Advanced Certificate Replacement**: Limited-downtime certificate replacement with automatic template rebinding
+- **Advanced Certificate Replacement**: Zero-downtime certificate replacement with automatic template rebinding
 
 ### Architecture
 
