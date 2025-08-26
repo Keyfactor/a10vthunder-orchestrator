@@ -159,5 +159,53 @@ The orchestrator handles file operations as follows:
 - **Invalid Filenames**: Some characters may not be valid for filesystem operations
 - **URL Encoding**: Special characters in aliases may require URL encoding in SCP URLs
 
+## API Integration Details
+
+### AXAPI Endpoints Used
+
+- **Authentication**: `/axapi/v3/auth` or `/axapi/v4/auth`
+- **SSL Certificates**: `/axapi/v3/slb/ssl-cert` or `/axapi/v4/slb/ssl-cert`
+- **Private Keys**: `/axapi/v3/slb/ssl-key` or `/axapi/v4/slb/ssl-key`
+- **SSL Templates**: `/axapi/v3/slb/template/server-ssl` and `/axapi/v3/slb/template/client-ssl`
+- **Virtual Services**: `/axapi/v3/slb/virtual-server`
+- **Partitions**: `/axapi/v3/active-partition`
+- **Memory Operations**: `/axapi/v3/write/memory`
+
+### Certificate Format Support
+
+- **PKCS#12**: Full support for certificates with private keys
+- **PEM**: Individual certificate files
+- **Certificate Chains**: Automatic handling of certificate chains
+- **Private Key Extraction**: Secure extraction and separate storage
+
+### Advanced Features
+
+#### Partition Support
+
+The orchestrator fully supports A10 partitions:
+- Set active partition before operations
+- Isolate certificate operations to specific partitions
+- Support multi-tenant deployments
+
+#### Template Management
+
+Intelligent SSL template handling:
+- Detection of server-ssl and client-ssl template usage
+- Atomic template updates during certificate replacement
+- Preservation of template configurations
+
+#### Virtual Service Coordination
+
+Advanced virtual service management:
+- Mapping of templates to virtual service ports
+- Coordinated unbinding and rebinding operations
+- Support for multiple template types on single ports
+
+#### Alias Management
+
+Sophisticated alias handling:
+- Automatic timestamp generation for replacements
+- 240-character limit compliance
+- Duplicate alias detection and resolution
 
 
