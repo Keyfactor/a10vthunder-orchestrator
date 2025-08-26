@@ -84,60 +84,88 @@ Password |This is the password for the vThunder api to access the certficate man
 
 *** 
 
-#### Usage
+### TEST CASES
 
-**Adding New Certificate New Alias**
 
-![](Media/Images/NewCertNewAlias.gif)
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+1|Fresh Add SSL Certificate With Private Key|Will create new SSL certificate and private key on the vThunder appliance in shared partition|shared|true|WebServerSSL|The new WebServerSSL certificate and private key will be created in SSL certificate store on vThunder|True
+1a|Replace SSL Cert with no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|shared|false|WebServerSSL|Error message indicating overwrite flag must be used|True
+1b|Replace SSL Cert with overwrite flag (unbound)|Will replace certificate and private key on vThunder for unbound certificate|shared|true|WebServerSSL|Certificate will be removed and re-added because it's not bound to templates|True
+2|Add SSL Cert Without Private Key|This will create a certificate with no private key on vThunder|shared|false|PublicCertOnly|Only certificate will be added to vThunder SSL store with no private key|True
+2a|Replace SSL Cert Without Private Key|This will replace a certificate with no private key on vThunder|shared|true|PublicCertOnly|Only certificate will be replaced on vThunder with no private key|True
+2b|Replace SSL Cert Without Private Key no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|shared|false|PublicCertOnly|Error message indicating overwrite flag must be used|True
+3|Remove Unbound SSL Certificate and Private Key|Certificate and Private Key will be removed from A10|shared|N/A|WebServerSSL|Certificate and key will be removed from vThunder SSL store|True
+3a|Remove SSL Certificate without Private Key|Certificate will be removed from A10|shared|N/A|PublicCertOnly|Certificate will be removed from vThunder SSL store|True
 
-*** 
+### Template-Bound Certificate Operations
 
-**Replace Cert With Same Alias**
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+4|Replace Server-SSL Template-Bound Certificate|Will create new timestamped certificate and update server-ssl templates|shared|true|APIGatewayCert|New certificate created with timestamp alias (APIGatewayCert_1672531200), server-ssl templates updated, virtual services rebound, old cert removed|True
+4a|Replace Client-SSL Template-Bound Certificate|Will create new timestamped certificate and update client-ssl templates|shared|true|ClientAuthCert|New certificate created with timestamp alias (ClientAuthCert_1672531200), client-ssl templates updated, virtual services rebound, old cert removed|True
+4b|Replace Multi-Template-Bound Certificate|Will create new timestamped certificate and update both server-ssl and client-ssl templates|shared|true|DualPurposeCert|New certificate created with timestamp, both template types updated with consistent alias, all virtual services rebound|True
+4c|Attempt to Remove Template-Bound Certificate|Should fail with informative error about certificate being in use|shared|N/A|BoundServerCert|Error indicating certificate is bound to SSL templates and cannot be removed|True
 
-![](Media/Images/ReplaceCertSameAlias.gif)
+### Partition Operations
 
-*** 
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+5|Add SSL Certificate to Custom Partition|Certificate will be added to specified partition instead of shared|tenant-prod|false|TenantWebCert|Certificate added to "tenant-prod" partition, isolated from shared partition|True
+5a|Remove SSL Certificate from Custom Partition|Certificate will be removed from specified partition|tenant-prod|N/A|TenantWebCert|Certificate removed from "tenant-prod" partition, shared partition unaffected|True
+5b|Replace Certificate in Custom Partition with Template Binding|Certificate replacement with template updates in specific partition|tenant-prod|true|TenantAPICert|New timestamped certificate created in partition, partition-specific templates updated|True
 
-**Add Cert No Private Key**
+### Inventory Operations
 
-![](Media/Images/AddPubCert.gif)
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+6|Inventory SSL Certificates from Shared Partition|Inventory of SSL certificates will be pulled from shared partition|shared|N/A|N/A|All SSL certificates in shared partition inventoried with private key flags and metadata|True
+6a|Inventory SSL Certificates from Custom Partition|Inventory of SSL certificates will be pulled from specified partition|tenant-prod|N/A|N/A|All SSL certificates in "tenant-prod" partition inventoried, isolated from other partitions|True
+6b|Inventory Mixed Certificate Types|Inventory should handle certificates with and without private keys|shared|N/A|N/A|Certificates with private keys marked as PrivateKeyEntry=true, certificates without marked as false|True
 
-*** 
+### API Version Compatibility
 
-**Replace Cert No Private Key**
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+7|API v4 Detection and Template Operations|System should detect A10 software version 4.x and use appropriate API format for template updates|shared|true|V4TestCert|API v4 format detected and used for template updates, version info logged showing 4.x software|True
+7a|API v6 Detection and Template Operations|System should detect A10 software version 6.x and use appropriate API format for template updates|shared|true|V6TestCert|API v6 format detected and used for template updates (default), version info logged|True
 
-![](Media/Images/PubCertReplace.gif)
+## ThunderMgmt Store Type Test Cases
 
-*** 
+### SCP Certificate Operations
 
-**Remove Cert No Private Key**
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+8|Fresh Add Management Certificate via SCP|Will upload certificate files to SCP server and install on A10 management interface|/home/certuser|true|MgmtInterface2025|Files MgmtInterface2025.crt and MgmtInterface2025.key created on SCP server, A10 loads certificate via API|True
+8a|Replace Management Certificate with overwrite flag|Will replace existing certificate files and reload on A10 management interface|/home/certuser|true|MgmtInterface2025|Existing files overwritten, A10 reloads certificate, 60-second delay observed, memory written|True
+8b|Replace Management Certificate without overwrite flag|Should warn user that files cannot be replaced without overwrite flag|/home/certuser|false|MgmtInterface2025|Error indicating files exist and overwrite flag must be used|True
+9|Add Management Cert Without Private Key|This will create certificate file only on SCP server|/home/certuser|false|MgmtCertOnly|Only .crt file will be created on SCP server, no .key file, A10 API called for certificate only|True
+10|Remove Management Certificate Files|Certificate files will be removed from SCP server|/home/certuser|N/A|MgmtInterface2025|Both .crt and .key files deleted from SCP server, A10 management configuration unchanged|True
 
-![](Media/Images/RemovePubCert.gif)
+### SCP Server Connectivity and Error Handling
 
-*** 
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+11|Inventory Management Certificates from SCP|Inventory of certificate files will be retrieved from SCP server directory|/home/certuser|N/A|N/A|All valid PEM certificates in SCP directory inventoried, invalid files skipped gracefully|True
+11a|SCP Authentication Failure|Should handle SCP authentication errors gracefully|/home/certuser|N/A|TestCert|Clear authentication error message, operation fails safely, security not compromised|True
+11b|SCP Network Connectivity Issues|Should handle network connectivity issues to SCP server|/home/unreachable|N/A|TestCert|Network timeout error captured, distinguishes from authentication errors, provides troubleshooting guidance|True
+11c|Remote File Already Exists Check|Should properly detect existing files on SCP server before upload|/home/certuser|false|ExistingCert|File existence check works correctly, appropriate error when overwrite=false and file exists|True
 
-**Remove Cert and Private Key**
+## Cross-Store Integration Test Cases
 
-![](Media/Images/RemoveCertAndKey.gif)
+Case Number|Case Name|Case Description|Store Types|Expected Results|Passed
+-----------|---------|----------------|-----------|----------------|--------------
+12|Concurrent SSL and Management Operations|Both store types should operate independently without interference|ThunderSsl + ThunderMgmt|SSL operations use AXAPI endpoints, Management operations use SCP+API, no conflicts or interference|True
+12a|PAM Integration Across Store Types|PAM credential resolution should work for both store types|ThunderSsl + ThunderMgmt|All PAM-eligible fields resolved securely across both store types, different credential contexts maintained|True
+12b|Mixed Partition and SCP Operations|Operations in SSL partitions should not affect SCP-based management operations|ThunderSsl (custom partition) + ThunderMgmt|SSL partition operations isolated from SCP operations, both succeed independently|True
 
-*** 
+## Error Recovery and Edge Case Test Cases
 
-**Certificate Inventory**
-
-![](Media/Images/CertificateInventory.gif)
-
-#### TEST CASES
-Case Number|Case Name|Case Description|Overwrite Flag|Alias Name|Expected Results|Passed
-------------|---------|----------------|--------------|----------|----------------|--------------
-1|Fresh Add With Alias|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|The new KeyAndCertBTest certificate and private key will be created in the ADC/SSL Cerificates area on vThunder.|True
-1a|Replace Alias with no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|KeyAndCertBTest|Error Saying Overwrite Flag Needs To Be Used|True
-1b|Replace Alias with overwrite flag|Will create new certificate and private key on the vThunder appliance|true|KeyAndCertBTest|Cert will be replaced because overwrite flag was used|True
-2|Add Cert Without Private Key|This will create a cert with no private key on vThunder|false|NewCertNoPk|Only Cert will be added to vThunder with no private key|True
-2a|Replace Cert Without Private Key|This will Replace a cert with no private key on vThunder|true|NewCertNoPk|Only Cert will be replaced on vThunder with no private key|True
-2b|Replace Cert Without Private Key no overwrite flag|Should warn user that a cert cannot be replaced with the same name without overwrite flag|false|NewCertNoPk|Error Saying Overwrite Flag Needs To Be Used|True
-3|Remove Certificate and Private Key|Certificate and Private Key Will Be Removed from A10|N/A|KeyAndCertBTest|Cert and Key will be removed from vThunder and Keyfactor Store|True
-3a|Remove Certificate without Private Key|Certificate Will Be Removed from A10|N/A|KeyAndCertBTest|Cert will be removed from vThunder and Keyfactor Store|True
-4|Inventory Certificates with Private Key|Inventory of Certificates with private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
-4a|Inventory Certificates without Private Key|Inventory of Certificates without private keys will be pulled from vThunder up to 125 tested|N/A|N/A|125 Certs will be inventoried, more should be supported but there is no paging in the API so limits apply|True
+Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
+-----------|---------|----------------|----------|--------------|----------|----------------|--------------
+13|Template Update Failure Recovery|Should handle failures during template update phase and rollback virtual service bindings|shared|true|RecoveryTest|Original template bindings restored to virtual services, new certificate cleaned up if possible, detailed error logging|True
+13a|Virtual Service Rebind Partial Failure|Should handle partial failures when rebinding templates to virtual services|shared|true|RebindTest|Failed bindings logged clearly, successful bindings remain, system state documented for manual recovery|True
+13b|Long Alias Name Handling|Should handle alias names approaching character limits and truncate appropriately for timestamps|shared|true|VeryLongAliasNameThatExceedsNormalLimitsAndNeedsToBeHandledGracefullyByTheSystem|Alias truncated to fit timestamp within 240 character limit, operation succeeds|True
+13c|A10 API Connection Loss During Operation|Should handle API connection failures during multi-step operations|shared|true|ConnectionTest|Operation fails gracefully, system state logged, rollback attempted where possible|True
 
 
