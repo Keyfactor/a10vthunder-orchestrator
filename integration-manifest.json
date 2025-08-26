@@ -11,27 +11,9 @@
 "description": "A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.",
 "about": {
 "orchestrator": {
-"UOFramework": "10.1",
+"UOFramework": "10.4",
 "pam_support": true,
-"keyfactor_platform_version": "9.10",
-"win": {
-"supportsCreateStore": false,
-"supportsDiscovery": false,
-"supportsManagementAdd": true,
-"supportsManagementRemove": true,
-"supportsReenrollment": false,
-"supportsInventory": true,
-"platformSupport": "Unused"
-},
-"linux": {
-"supportsCreateStore": false,
-"supportsDiscovery": false,
-"supportsManagementAdd": false,
-"supportsManagementRemove": false,
-"supportsReenrollment": false,
-"supportsInventory": false,
-"platformSupport": "Unused"
-},
+"keyfactor_platform_version": "11.0",
 "store_types": [
 {
 "Name": "A10 Thunder Ssl Certificates",
@@ -42,7 +24,7 @@
 "Add": true,
 "Create": false,
 "Discovery": false,
-"Enrollment": true,
+"Enrollment": false,
 "Remove": true
 },
 "Properties": [
@@ -77,7 +59,7 @@
 "Add": true,
 "Create": false,
 "Discovery": false,
-"Enrollment": true,
+"Enrollment": false,
 "Remove": true
 },
 "Properties": [
