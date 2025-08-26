@@ -273,20 +273,3 @@ Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expe
 11a|SCP Authentication Failure|Should handle SCP authentication errors gracefully|/home/certuser|N/A|TestCert|Clear authentication error message, operation fails safely, security not compromised|True
 11b|SCP Network Connectivity Issues|Should handle network connectivity issues to SCP server|/home/unreachable|N/A|TestCert|Network timeout error captured, distinguishes from authentication errors, provides troubleshooting guidance|True
 11c|Remote File Already Exists Check|Should properly detect existing files on SCP server before upload|/home/certuser|false|ExistingCert|File existence check works correctly, appropriate error when overwrite=false and file exists|True
-
-## Cross-Store Integration Test Cases
-
-Case Number|Case Name|Case Description|Store Types|Expected Results|Passed
------------|---------|----------------|-----------|----------------|--------------
-12|Concurrent SSL and Management Operations|Both store types should operate independently without interference|ThunderSsl + ThunderMgmt|SSL operations use AXAPI endpoints, Management operations use SCP+API, no conflicts or interference|True
-12a|PAM Integration Across Store Types|PAM credential resolution should work for both store types|ThunderSsl + ThunderMgmt|All PAM-eligible fields resolved securely across both store types, different credential contexts maintained|True
-12b|Mixed Partition and SCP Operations|Operations in SSL partitions should not affect SCP-based management operations|ThunderSsl (custom partition) + ThunderMgmt|SSL partition operations isolated from SCP operations, both succeed independently|True
-
-## Error Recovery and Edge Case Test Cases
-
-Case Number|Case Name|Case Description|Store Path|Overwrite Flag|Alias Name|Expected Results|Passed
------------|---------|----------------|----------|--------------|----------|----------------|--------------
-13|Template Update Failure Recovery|Should handle failures during template update phase and rollback virtual service bindings|shared|true|RecoveryTest|Original template bindings restored to virtual services, new certificate cleaned up if possible, detailed error logging|True
-13a|Virtual Service Rebind Partial Failure|Should handle partial failures when rebinding templates to virtual services|shared|true|RebindTest|Failed bindings logged clearly, successful bindings remain, system state documented for manual recovery|True
-13b|Long Alias Name Handling|Should handle alias names approaching character limits and truncate appropriately for timestamps|shared|true|VeryLongAliasNameThatExceedsNormalLimitsAndNeedsToBeHandledGracefullyByTheSystem|Alias truncated to fit timestamp within 240 character limit, operation succeeds|True
-13c|A10 API Connection Loss During Operation|Should handle API connection failures during multi-step operations|shared|true|ConnectionTest|Operation fails gracefully, system state logged, rollback attempted where possible|True
