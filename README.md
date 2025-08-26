@@ -89,7 +89,7 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
 
 ## Compatibility
 
-This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
+This integration is compatible with Keyfactor Universal Orchestrator version 10.4 and later.
 
 ## Support
 The a10vThunder Universal Orchestrator extension is supported by Keyfactor. If you require support for any issues or have feature request, please open a support ticket by either contacting your Keyfactor representative or via the Keyfactor Support Portal at https://support.keyfactor.com.
@@ -200,7 +200,7 @@ curl -X POST https://<vThunder-IP>/axapi/v3/auth \
 | Add          | ✅ Checked        |
 | Remove       | ✅ Checked     |
 | Discovery    | 🔲 Unchecked  |
-| Reenrollment | ✅ Checked |
+| Reenrollment | 🔲 Unchecked |
 | Create       | 🔲 Unchecked     |
 
 #### Store Type Creation
@@ -243,7 +243,7 @@ the Keyfactor Command Portal
    | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
    | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
    | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
-   | Supports Reenrollment | ✅ Checked |  Indicates that the Store Type supports Reenrollment |
+   | Supports Reenrollment | 🔲 Unchecked |  Indicates that the Store Type supports Reenrollment |
    | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
    | Needs Server | ✅ Checked | Determines if a target server name is required when creating store |
    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
@@ -392,7 +392,7 @@ This extension coordinates certificate and private key delivery by using SCP as 
 | Add          | ✅ Checked        |
 | Remove       | ✅ Checked     |
 | Discovery    | 🔲 Unchecked  |
-| Reenrollment | ✅ Checked |
+| Reenrollment | 🔲 Unchecked |
 | Create       | 🔲 Unchecked     |
 
 #### Store Type Creation
@@ -435,7 +435,7 @@ the Keyfactor Command Portal
    | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
    | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
    | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
-   | Supports Reenrollment | ✅ Checked |  Indicates that the Store Type supports Reenrollment |
+   | Supports Reenrollment | 🔲 Unchecked |  Indicates that the Store Type supports Reenrollment |
    | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
    | Needs Server | ✅ Checked | Determines if a target server name is required when creating store |
    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
