@@ -4,7 +4,7 @@
 
 A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.
 
-This agent implements three job types – Inventory, Management Add, and Management Remove. Below are the steps necessary to configure this AnyAgent.  It supports adding certificates with or without private keys.
+This agent implements three job types – Inventory, Management Add, and Management Remove.  Below are the steps necessary to configure this AnyAgent.  It supports adding certificates with or without private keys.
 
 
 **A10 vThunder Configuration**
