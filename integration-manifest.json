@@ -6,6 +6,7 @@
   "update_catalog": true,
   "link_github": true,
   "support_level": "kf-supported",
+  "supportedDomains":["a10networks.com"]
   "description": "A10 vThunder AnyAgent allows an organization to inventory and deploy certificates in any domain that the appliance services. The AnyAgent deploys the appropriate files (.cer, .pem) within the defined directories and also performs and Inventory on the Items.",
   "about": {
     "orchestrator": {
