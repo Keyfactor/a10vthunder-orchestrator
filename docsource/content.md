@@ -72,19 +72,6 @@ The ThunderMgmt store type uses an intermediate SCP server for management interf
 
 Both store types support PAM integration for secure credential management and require appropriate A10 device permissions.
 
-### Key Features
-
-- **Direct SSL Certificate Management**: Native A10 API integration for SSL certificate deployment and management
-- **Template-Aware Operations**: Intelligent handling of certificates bound to SSL templates and virtual services
-- **Multi-API Version Support**: Automatic detection and support for A10 API v4 and v6
-- **Partition Support**: Full support for A10 partitions for multi-tenant deployments
-- **Certificate Inventory**: Comprehensive discovery and inventory of existing certificates
-- **Management Interface Certificates**: SCP-based deployment for A10 management interface certificates
-- **PAM Integration**: Support for Privileged Access Management systems
-- **Advanced Certificate Replacement**: Zero-downtime certificate replacement with automatic template rebinding
-
-### Architecture
-
 #### ThunderSsl Store Type
 Uses A10's native REST API (AXAPI) for direct certificate management:
 - Certificates are uploaded directly to the A10 appliance
@@ -107,6 +94,17 @@ The orchestrator requires an A10 user account with permissions to:
 - Write configuration to memory
 - Set active partitions
 - For ThunderMgmt: SSH/SCP file operations
+
+### Key Features
+
+- **Direct SSL Certificate Management**: Native A10 API integration for SSL certificate deployment and management
+- **Template-Aware Operations**: Intelligent handling of certificates bound to SSL templates and virtual services
+- **Multi-API Version Support**: Automatic detection and support for A10 API v4 and v6
+- **Partition Support**: Full support for A10 partitions for multi-tenant deployments
+- **Certificate Inventory**: Comprehensive discovery and inventory of existing certificates
+- **Management Interface Certificates**: SCP-based deployment for A10 management interface certificates
+- **PAM Integration**: Support for Privileged Access Management systems
+- **Advanced Certificate Replacement**: Zero-downtime certificate replacement with automatic template rebinding
 
 ## API Integration Details
 
