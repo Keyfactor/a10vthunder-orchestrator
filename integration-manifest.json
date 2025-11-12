@@ -45,6 +45,8 @@
 "Style": "Default"
 },
 "StorePathValue": "",
+"ClientMachineDescription": "Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to manage SSL certificates directly on the device.",
+"StorePathDescription": "A10 partition name where certificates will be managed. Use 'shared' for the default shared partition, or specify a custom partition name (e.g., 'tenant-prod') for multi-tenant deployments. The partition must already exist on the A10 device. Leave empty to default to the shared partition.",
 "PrivateKeyAllowed": "Optional",
 "ServerRequired": true,
 "PowerShell": false,
@@ -126,6 +128,8 @@
 "Style": "Default"
 },
 "StorePathValue": "",
+"ClientMachineDescription": "Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to trigger certificate installation on the management interface after uploading files via SCP.",
+"StorePathDescription": "Absolute directory path on the SCP server where certificate files (.crt and .key) will be uploaded. The A10 device will retrieve certificate files from this location. Example: '/home/certuser'. The specified path must exist and the SCP user must have write permissions to this directory.",
 "PrivateKeyAllowed": "Required",
 "ServerRequired": true,
 "PowerShell": false,
