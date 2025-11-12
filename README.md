@@ -660,8 +660,8 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
    | --------- |---------------------------------------------------------|
    | Category | Select "A10 Thunder Ssl Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
-   | Client Machine |  |
-   | Store Path |  |
+   | Client Machine | Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to manage SSL certificates directly on the device. |
+   | Store Path | A10 partition name where certificates will be managed. Use 'shared' for the default shared partition, or specify a custom partition name (e.g., 'tenant-prod') for multi-tenant deployments. The partition must already exist on the A10 device. Leave empty to default to the shared partition. |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderSsl` certificates. Specifically, one with the `ThunderSsl` capability. |
    | allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections. |
 
@@ -686,8 +686,8 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
    | --------- | ----------- |
    | Category | Select "A10 Thunder Ssl Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
-   | Client Machine |  |
-   | Store Path |  |
+   | Client Machine | Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to manage SSL certificates directly on the device. |
+   | Store Path | A10 partition name where certificates will be managed. Use 'shared' for the default shared partition, or specify a custom partition name (e.g., 'tenant-prod') for multi-tenant deployments. The partition must already exist on the A10 device. Leave empty to default to the shared partition. |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderSsl` certificates. Specifically, one with the `ThunderSsl` capability. |
    | Properties.allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections. |
 
@@ -742,8 +742,8 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | --------- |---------------------------------------------------------|
    | Category | Select "A10 Thunder Management Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
-   | Client Machine |  |
-   | Store Path |  |
+   | Client Machine | Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to trigger certificate installation on the management interface after uploading files via SCP. |
+   | Store Path | Absolute directory path on the SCP server where certificate files (.crt and .key) will be uploaded. The A10 device will retrieve certificate files from this location. Example: '/home/certuser'. The specified path must exist and the SCP user must have write permissions to this directory. |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderMgmt` certificates. Specifically, one with the `ThunderMgmt` capability. |
    | OrchToScpServerIp | IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates. |
    | ScpPort | TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations. |
@@ -773,8 +773,8 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | --------- | ----------- |
    | Category | Select "A10 Thunder Management Certificates" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
-   | Client Machine |  |
-   | Store Path |  |
+   | Client Machine | Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to trigger certificate installation on the management interface after uploading files via SCP. |
+   | Store Path | Absolute directory path on the SCP server where certificate files (.crt and .key) will be uploaded. The A10 device will retrieve certificate files from this location. Example: '/home/certuser'. The specified path must exist and the SCP user must have write permissions to this directory. |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderMgmt` certificates. Specifically, one with the `ThunderMgmt` capability. |
    | Properties.OrchToScpServerIp | IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates. |
    | Properties.ScpPort | TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations. |
