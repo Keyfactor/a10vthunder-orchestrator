@@ -38,6 +38,71 @@ The A10 vThunder Orchestrator provides automated certificate lifecycle managemen
 1. **ThunderSsl**: Direct API-based management of SSL certificates for load balancing and application delivery
 2. **ThunderMgmt**: SCP-based management of certificates for the A10 management interface (GUI/API access)
 
+### Architecture
+
+The A10 vThunder Orchestrator implements two distinct certificate store types with different architectural approaches:
+```mermaid
+graph TB
+    subgraph "Keyfactor Environment"
+        KF[Keyfactor Command]
+        UO[Universal Orchestrator<br/>with A10 Extension]
+    end
+
+    subgraph "ThunderSsl Store Type - Direct API Management"
+        A10_SSL[A10 vThunder Appliance<br/>API Endpoint]
+        SSL_STORE[(SSL Certificate Store<br/>Certificates & Keys)]
+        SSL_TEMPLATES[SSL Templates<br/>server-ssl / client-ssl]
+        VIRTUAL_SERVICES[Virtual Services<br/>Load Balancer Config]
+    end
+
+    subgraph "ThunderMgmt Store Type - SCP-Based Management"
+        SCP[SCP Server<br/>Intermediate Storage]
+        A10_MGMT[A10 vThunder Appliance<br/>Management Interface]
+        MGMT_STORE[(Management Certs<br/>.crt / .key files)]
+    end
+
+    KF -->|Certificate Lifecycle Jobs| UO
+
+    UO -->|"1. AXAPI REST Calls<br/>(HTTPS - v4/v6)<br/>Auth, Upload, Template Updates"| A10_SSL
+    A10_SSL -->|Manages| SSL_STORE
+    A10_SSL -->|Updates Bindings| SSL_TEMPLATES
+    SSL_TEMPLATES -->|Bound To| VIRTUAL_SERVICES
+
+    UO -->|"2a. SCP Upload<br/>(SSH/SCP)<br/>cert.crt + cert.key"| SCP
+    SCP -->|"2b. A10 Retrieves<br/>(SCP/SSH)"| A10_MGMT
+    UO -->|"2c. AXAPI Install Command<br/>(HTTPS)"| A10_MGMT
+    A10_MGMT -->|Installs| MGMT_STORE
+
+    style UO fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style A10_SSL fill:#2196F3,stroke:#1565C0,color:#fff
+    style A10_MGMT fill:#2196F3,stroke:#1565C0,color:#fff
+    style SCP fill:#FF9800,stroke:#E65100,color:#fff
+    style SSL_STORE fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style MGMT_STORE fill:#9C27B0,stroke:#6A1B9A,color:#fff
+```
+
+#### ThunderSsl Store Type (Direct API Management)
+
+The ThunderSsl store type provides direct, API-based certificate management:
+
+- **Single-hop architecture**: Orchestrator connects directly to A10 AXAPI (REST API) via HTTPS
+- **Automatic template management**: Detects and updates SSL template bindings (server-ssl/client-ssl)
+- **Zero-downtime replacements**: Creates timestamped certificates and atomically rebinds templates
+- **Multi-tenant support**: Full partition support for isolated certificate operations
+- **API version flexibility**: Automatically detects and supports both AXAPI v4 and v6
+
+#### ThunderMgmt Store Type (SCP-Based Management)
+
+The ThunderMgmt store type uses an intermediate SCP server for management interface certificates:
+
+- **Three-party architecture**: Orchestrator → SCP Server → A10 Device
+- **Network flexibility**: Supports different network paths between orchestrator and A10 device
+- **File-based deployment**: Uploads .crt and .key files to SCP server for A10 retrieval
+- **Management interface specific**: Used exclusively for A10 GUI/API access certificates
+- **Coordinated installation**: AXAPI commands trigger certificate installation after file transfer
+
+Both store types support PAM integration for secure credential management and require appropriate A10 device permissions.
+
 ### Key Features
 
 - **Direct SSL Certificate Management**: Native A10 API integration for SSL certificate deployment and management
