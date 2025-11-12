@@ -325,7 +325,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
-   | allowInvalidCert | Allow Invalid Cert on A10 Management API |  | Bool | true | ✅ Checked |
+   | allowInvalidCert | Allow Invalid Cert on A10 Management API | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections. | Bool | true | ✅ Checked |
 
    The Custom Fields tab should look like this:
 
@@ -568,12 +568,12 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
-   | OrchToScpServerIp | Orch To Scp Server Ip |  | String |  | ✅ Checked |
-   | ScpPort | Port Used For Scp |  | String |  | ✅ Checked |
-   | ScpUserName | UserName Used For Scp |  | Secret |  | ✅ Checked |
-   | ScpPassword | Password Used For Scp |  | Secret |  | ✅ Checked |
-   | A10ToScpServerIp | A10 Device To Scp Server Ip |  | String |  | ✅ Checked |
-   | allowInvalidCert | Allow Invalid Cert on A10 Management API |  | Bool | true | ✅ Checked |
+   | OrchToScpServerIp | Orch To Scp Server Ip | IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates. | String |  | ✅ Checked |
+   | ScpPort | Port Used For Scp | TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations. | String |  | ✅ Checked |
+   | ScpUserName | UserName Used For Scp | Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval. | Secret |  | ✅ Checked |
+   | ScpPassword | Password Used For Scp | Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval. | Secret |  | ✅ Checked |
+   | A10ToScpServerIp | A10 Device To Scp Server Ip | IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths. | String |  | ✅ Checked |
+   | allowInvalidCert | Allow Invalid Cert on A10 Management API | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process. | Bool | true | ✅ Checked |
 
    The Custom Fields tab should look like this:
 
@@ -663,7 +663,7 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
    | Client Machine |  |
    | Store Path |  |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderSsl` certificates. Specifically, one with the `ThunderSsl` capability. |
-   | allowInvalidCert |  |
+   | allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections. |
 
 </details>
 
@@ -689,7 +689,7 @@ The a10vThunder Universal Orchestrator extension implements 2 Certificate Store 
    | Client Machine |  |
    | Store Path |  |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderSsl` certificates. Specifically, one with the `ThunderSsl` capability. |
-   | Properties.allowInvalidCert |  |
+   | Properties.allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections. |
 
 3. **Import the CSV file to create the certificate stores**
 
@@ -745,12 +745,12 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | Client Machine |  |
    | Store Path |  |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderMgmt` certificates. Specifically, one with the `ThunderMgmt` capability. |
-   | OrchToScpServerIp |  |
-   | ScpPort |  |
-   | ScpUserName |  |
-   | ScpPassword |  |
-   | A10ToScpServerIp |  |
-   | allowInvalidCert |  |
+   | OrchToScpServerIp | IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates. |
+   | ScpPort | TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations. |
+   | ScpUserName | Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval. |
+   | ScpPassword | Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval. |
+   | A10ToScpServerIp | IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths. |
+   | allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process. |
 
 </details>
 
@@ -776,12 +776,12 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | Client Machine |  |
    | Store Path |  |
    | Orchestrator | Select an approved orchestrator capable of managing `ThunderMgmt` certificates. Specifically, one with the `ThunderMgmt` capability. |
-   | Properties.OrchToScpServerIp |  |
-   | Properties.ScpPort |  |
-   | Properties.ScpUserName |  |
-   | Properties.ScpPassword |  |
-   | Properties.A10ToScpServerIp |  |
-   | Properties.allowInvalidCert |  |
+   | Properties.OrchToScpServerIp | IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates. |
+   | Properties.ScpPort | TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations. |
+   | Properties.ScpUserName | Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval. |
+   | Properties.ScpPassword | Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval. |
+   | Properties.A10ToScpServerIp | IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths. |
+   | Properties.allowInvalidCert | Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process. |
 
 3. **Import the CSV file to create the certificate stores**
 
@@ -801,8 +801,8 @@ If a PAM provider was installed _on the Universal Orchestrator_ in the [Installa
    | --------- | ----------- |
    | ServerUsername | Username to use when connecting to server |
    | ServerPassword | Password to use when connecting to server |
-   | ScpUserName |  |
-   | ScpPassword |  |
+   | ScpUserName | Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval. |
+   | ScpPassword | Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval. |
 
 Please refer to the **Universal Orchestrator (remote)** usage section ([PAM providers on the Keyfactor Integration Catalog](https://keyfactor.github.io/integrations-catalog/content/pam)) for your selected PAM provider for instructions on how to load attributes orchestrator-side.
 > Any secret can be rendered by a PAM provider _installed on the Keyfactor Command server_. The above parameters are specific to attributes that can be fetched by an installed PAM provider running on the Universal Orchestrator server itself.
