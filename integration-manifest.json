@@ -29,12 +29,13 @@
 },
 "Properties": [
 {
-"Name": "allowInvalidCert",
-"DisplayName": "Allow Invalid Cert on A10 Management API",
-"Type": "Bool",
-"DependsOn": "",
-"DefaultValue": "true",
-"Required": true
+  "Name": "allowInvalidCert",
+  "DisplayName": "Allow Invalid Cert on A10 Management API",
+  "Type": "Bool",
+  "DependsOn": "",
+  "DefaultValue": "true",
+  "Required": true,
+  "Description": "Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections."
 }
 ],
 "EntryParameters": [],
@@ -64,52 +65,58 @@
 },
 "Properties": [
 {
-"Name": "OrchToScpServerIp",
-"DisplayName": "Orch To Scp Server Ip",
-"Type": "String",
-"DependsOn": "",
-"DefaultValue": "",
-"Required": true
+  "Name": "OrchToScpServerIp",
+  "DisplayName": "Orch To Scp Server Ip",
+  "Type": "String",
+  "DependsOn": "",
+  "DefaultValue": "",
+  "Required": true,
+  "Description": "IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates."
 },
 {
-"Name": "ScpPort",
-"DisplayName": "Port Used For Scp",
-"Type": "String",
-"DependsOn": "",
-"DefaultValue": "",
-"Required": true
+  "Name": "ScpPort",
+  "DisplayName": "Port Used For Scp",
+  "Type": "String",
+  "DependsOn": "",
+  "DefaultValue": "",
+  "Required": true,
+  "Description": "TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations."
 },
 {
-"Name": "ScpUserName",
-"DisplayName": "UserName Used For Scp",
-"Type": "Secret",
-"DependsOn": "",
-"DefaultValue": "",
-"Required": true
+  "Name": "ScpUserName",
+  "DisplayName": "UserName Used For Scp",
+  "Type": "Secret",
+  "DependsOn": "",
+  "DefaultValue": "",
+  "Required": true,
+  "Description": "Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval."
 },
 {
-"Name": "ScpPassword",
-"DisplayName": "Password Used For Scp",
-"Type": "Secret",
-"DependsOn": "",
-"DefaultValue": "",
-"Required": true
+  "Name": "ScpPassword",
+  "DisplayName": "Password Used For Scp",
+  "Type": "Secret",
+  "DependsOn": "",
+  "DefaultValue": "",
+  "Required": true,
+  "Description": "Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval."
 },
 {
-"Name": "A10ToScpServerIp",
-"DisplayName": "A10 Device To Scp Server Ip",
-"Type": "String",
-"DependsOn": "",
-"DefaultValue": "",
-"Required": true
+  "Name": "A10ToScpServerIp",
+  "DisplayName": "A10 Device To Scp Server Ip",
+  "Type": "String",
+  "DependsOn": "",
+  "DefaultValue": "",
+  "Required": true,
+  "Description": "IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths."
 },
 {
-"Name": "allowInvalidCert",
-"DisplayName": "Allow Invalid Cert on A10 Management API",
-"Type": "Bool",
-"DependsOn": "",
-"DefaultValue": "true",
-"Required": true
+  "Name": "allowInvalidCert",
+  "DisplayName": "Allow Invalid Cert on A10 Management API",
+  "Type": "Bool",
+  "DependsOn": "",
+  "DefaultValue": "true",
+  "Required": true,
+  "Description": "Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process."
 }
 ],
 "EntryParameters": [],
