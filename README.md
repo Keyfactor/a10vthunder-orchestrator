@@ -394,6 +394,16 @@ the Keyfactor Command Portal
 
    ![ThunderSsl Custom Fields Tab](docsource/images/ThunderSsl-custom-fields-store-type-dialog.png)
 
+
+   ###### Allow Invalid Cert on A10 Management API
+   Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections.
+
+   ![ThunderSsl Custom Field - allowInvalidCert](docsource/images/ThunderSsl-custom-field-allowInvalidCert-dialog.png)
+
+
+
+
+
    </details>
 </details>
 
@@ -642,6 +652,51 @@ the Keyfactor Command Portal
 
    ![ThunderMgmt Custom Fields Tab](docsource/images/ThunderMgmt-custom-fields-store-type-dialog.png)
 
+
+   ###### Orch To Scp Server Ip
+   IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates.
+
+   ![ThunderMgmt Custom Field - OrchToScpServerIp](docsource/images/ThunderMgmt-custom-field-OrchToScpServerIp-dialog.png)
+
+
+
+   ###### Port Used For Scp
+   TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations.
+
+   ![ThunderMgmt Custom Field - ScpPort](docsource/images/ThunderMgmt-custom-field-ScpPort-dialog.png)
+
+
+
+   ###### UserName Used For Scp
+   Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval.
+
+   ![ThunderMgmt Custom Field - ScpUserName](docsource/images/ThunderMgmt-custom-field-ScpUserName-dialog.png)
+
+
+
+   ###### Password Used For Scp
+   Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval.
+
+   ![ThunderMgmt Custom Field - ScpPassword](docsource/images/ThunderMgmt-custom-field-ScpPassword-dialog.png)
+
+
+
+   ###### A10 Device To Scp Server Ip
+   IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths.
+
+   ![ThunderMgmt Custom Field - A10ToScpServerIp](docsource/images/ThunderMgmt-custom-field-A10ToScpServerIp-dialog.png)
+
+
+
+   ###### Allow Invalid Cert on A10 Management API
+   Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process.
+
+   ![ThunderMgmt Custom Field - allowInvalidCert](docsource/images/ThunderMgmt-custom-field-allowInvalidCert-dialog.png)
+
+
+
+
+
    </details>
 </details>
 
@@ -650,15 +705,14 @@ the Keyfactor Command Portal
 
 1. **Download the latest a10vThunder Universal Orchestrator extension from GitHub.**
 
-    Navigate to the [a10vThunder Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/a10vthunder-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    Navigate to the [a10vThunder Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/a10vthunder-orchestrator/releases/latest). Refer to the compatibility matrix below to determine the asset should be downloaded. Then, click the corresponding asset to download the zip archive.
 
    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `a10vthunder-orchestrator` .NET version to download |
    | --------- | ----------- | ----------- | ----------- |
    | Older than `11.0.0` | | | `net6.0` |
    | Between `11.0.0` and `11.5.1` (inclusive) | `net6.0` | | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
-   | `11.6` _and_ newer | `net8.0` | | `net8.0` |
+   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` || Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
+   | `11.6` _and_ newer | `net8.0` | | `net8.0` | 
 
     Unzip the archive containing extension assemblies to a known location.
 
