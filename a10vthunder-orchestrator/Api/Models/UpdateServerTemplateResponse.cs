@@ -16,7 +16,7 @@ using Newtonsoft.Json;
 
 namespace a10vthunder.Api.Models
 {
-    public class UpdateTemplateResposneCertificate
+    public class UpdateTemplateResponseCertificate
     {
         public string cert { get; set; }
         public string key { get; set; }
@@ -28,6 +28,6 @@ namespace a10vthunder.Api.Models
 
     public class UpdateServerTemplateResponse
     {
-        public UpdateTemplateResposneCertificate certificate { get; set; }
+        public UpdateTemplateResponseCertificate certificate { get; set; }
     }
 }

@@ -374,7 +374,7 @@ namespace a10vthunder.Api
 
                 return new UpdateServerTemplateResponse
                 {
-                    certificate = new UpdateTemplateResposneCertificate
+                    certificate = new UpdateTemplateResponseCertificate
                     {
                         cert = clientSsl.cert,
                         key = clientSsl.key,
@@ -440,7 +440,7 @@ namespace a10vthunder.Api
 
                 var sslTemplateResponse = new UpdateServerTemplateResponse
                 {
-                    certificate = new UpdateTemplateResposneCertificate
+                    certificate = new UpdateTemplateResponseCertificate
                     {
                         cert = clientSsl.cert,
                         key = clientSsl.key,
@@ -524,9 +524,9 @@ namespace a10vthunder.Api
 
                 return new UpdateClientTemplateResponse
                 {
-                    certificatelist = new List<CleintCertificateList>
+                    certificatelist = new List<ClientCertificateList>
             {
-                new CleintCertificateList
+                new ClientCertificateList
                 {
                     cert = clientSsl.cert,
                     key = clientSsl.key,
@@ -585,9 +585,9 @@ namespace a10vthunder.Api
 
                 var clientTemplateResponse = new UpdateClientTemplateResponse
                 {
-                    certificatelist = new List<CleintCertificateList>
+                    certificatelist = new List<ClientCertificateList>
             {
-                new CleintCertificateList
+                new ClientCertificateList
                 {
                     cert = clientSsl.cert,
                     key = clientSsl.key,

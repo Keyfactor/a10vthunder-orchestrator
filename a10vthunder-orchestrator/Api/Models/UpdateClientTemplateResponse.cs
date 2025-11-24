@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace a10vthunder.Api.Models
 {
-    public class CleintCertificateList
+    public class ClientCertificateList
     {
         public string cert { get; set; }
         public string key { get; set; }
@@ -30,7 +30,7 @@ namespace a10vthunder.Api.Models
     public class UpdateClientTemplateResponse
     {
         [JsonProperty("certificate-list")]
-        public List<CleintCertificateList> certificatelist { get; set; }
+        public List<ClientCertificateList> certificatelist { get; set; }
     }
 
 }
